@@ -1069,6 +1069,29 @@
             }
         ];
 
+        /* * =================================================================
+         * NEW: SIMULATOR DATA (ADDED HERE)
+         * ================================================================= */
+        const simulatorData = [
+            { id: 'sim-merge', title: '1. Merge Sort', desc: 'Interactive visualization for Merge Sort.', url: 'Html/1.%20Merge%20Sort.html', color: 'var(--accent)' },
+            { id: 'sim-heap', title: '2. Heap Sort', desc: 'Interactive visualization for Heap Sort.', url: 'Html/2.%20Heap%20Sort.html', color: 'var(--success)' },
+            { id: 'sim-quick', title: '3. Quick Sort', desc: 'Interactive visualization for Quick Sort.', url: 'Html/3.%20Quick%20Sort.html', color: 'var(--accent)' },
+            { id: 'sim-radix', title: '4. Radix Sort', desc: 'Interactive visualization for Radix Sort.', url: 'Html/4.%20Radix%20Sort.html', color: 'var(--success)' },
+            { id: 'sim-bucket', title: '5. Bucket Sort', desc: 'Interactive visualization for Bucket Sort.', url: 'Html/5.%20Bucket%20Sort.html', color: 'var(--accent)' },
+            { id: 'sim-search', title: '6. Linear & Binary Search', desc: 'Visualization for Linear and Binary Search.', url: 'Html/6.%20Linear%20%26%20BInary%20Search.html', color: 'var(--success)' },
+            { id: 'sim-knapsack', title: '11. Knapsack Problem', desc: 'Interactive visualization for Knapsack.', url: 'Html/11.%20Knapsack%20Problem.html', color: 'var(--accent)' },
+            { id: 'sim-dijkstra', title: '13. Dijkstra\'s Algorithm', desc: 'Shortest path visualization.', url: 'Html/13%20Dijiksta%27s%20Algorithm.html', color: 'var(--success)' },
+            { id: 'sim-floyd', title: '14. Floyd Warshall', desc: 'All-Pairs Shortest Path visualization.', url: 'Html/14%20Flyod%20Warshall.html', color: 'var(--accent)' },
+            { id: 'sim-mst', title: '15. MST', desc: 'Minimum Spanning Tree algorithm.', url: 'Html/15%20MST.html', color: 'var(--success)' },
+            { id: 'sim-nqueen', title: '16. N Queen Problem', desc: 'Visualization for the N-Queen problem.', url: 'Html/16%20N%20Queen%20Problem.html', color: 'var(--accent)' },
+            { id: 'sim-tsp', title: '17. Travelling Salesman', desc: 'Visualization for TSP.', url: 'Html/17%20Travelling%20Salesman%20Problem.html', color: 'var(--success)' },
+            { id: 'sim-heap-exam', title: 'Heap Sort Exam Question', desc: 'Practice and simulation.', url: 'Html/Heap%20Sort%20Exam%20Question.html', color: 'var(--danger)' },
+            { id: 'sim-quick-exam', title: 'Quick Sort Exam Question', desc: 'Practice and simulation.', url: 'Html/Quick%20Sort%20Exam%20Question.html', color: 'var(--danger)' },
+            { id: 'sim-mst-ques', title: 'MST QUES', desc: 'Practice questions for MST.', url: 'Html/MST%20QUES.html', color: 'var(--danger)' }
+        ];
+        /* ================================================================= */
+
+
         // 2. STATE MANAGEMENT
         let isAdmin = false;
         let adminTriggerCount = 0;
@@ -1217,6 +1240,12 @@
                     <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
                     Dashboard
                 </li>
+
+                <!-- NEW: SIMULATOR SIDEBAR LINK -->
+                <li class="nav-item ${currentView === 'simulators' ? 'active' : ''}" onclick="setView('simulators')">
+                    <svg style="width:20px;height:20px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    Simulators
+                </li>
             `;
 
             syllabusData.forEach(unit => {
@@ -1242,6 +1271,9 @@
 
             if (viewId === 'dashboard') {
                 renderDashboard();
+            } else if (viewId === 'simulators') {
+                // NEW: Routing logic for Simulators view
+                renderSimulators();
             } else {
                 renderUnit(viewId);
             }
@@ -1307,8 +1339,89 @@
             });
 
             html += `</div>`;
+
+
+            /* * =================================================================
+             * NEW: SIMULATOR SECTION ON DASHBOARD
+             * ================================================================= */
+            html += `
+                <h3 class="section-header" style="margin-top: 40px;">Interactive Simulators</h3>
+                <div class="units-grid">
+            `;
+
+            simulatorData.forEach(sim => {
+                html += `
+                    <div class="card unit-card" onclick="window.open('${sim.url}', '_blank')" style="border-left-color: ${sim.color};">
+                        <div>
+                            <h3>${sim.title}</h3>
+                            <p style="font-size:0.9rem; color:var(--text-light); margin-bottom:15px;">${sim.desc}</p>
+                        </div>
+                        <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid var(--border); color: var(--accent); font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; justify-content: space-between;">
+                            <span>Launch Simulator</span>
+                            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Quick Link Card to "All Simulators" page
+            html += `
+                    <div class="card unit-card" onclick="setView('simulators')" style="border-left-color: transparent; border: 2px dashed var(--border); background: transparent; justify-content: center; align-items: center; text-align: center; box-shadow: none;">
+                        <svg style="width:32px;height:32px;color:var(--text-light);margin-bottom:10px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 9l3 3m0 0l-3 3m3-3H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <h3 style="color: var(--text-light); font-size: 1.1rem;">View All Simulators</h3>
+                    </div>
+                </div>
+            `;
+            /* ================================================================= */
+
             document.getElementById('contentArea').innerHTML = html;
         }
+
+        /* * =================================================================
+         * NEW: DEDICATED SIMULATORS VIEW RENDER FUNCTION
+         * ================================================================= */
+        function renderSimulators() {
+            document.getElementById('pageTitle').innerHTML = '<h2>Algorithm Simulators</h2>';
+            
+            let html = `
+                <div class="back-nav">
+                    <button class="btn-back" onclick="setView('dashboard')">
+                        <svg style="width:18px;height:18px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        Back to Dashboard
+                    </button>
+                </div>
+                <p style="color:var(--text-light); margin-bottom: 25px; font-size: 1.05rem;">Interactive visualizations to help you understand algorithms step-by-step.</p>
+                <div class="units-grid">
+            `;
+
+            simulatorData.forEach(sim => {
+                html += `
+                    <div class="card unit-card" onclick="window.open('${sim.url}', '_blank')" style="border-left-color: ${sim.color};">
+                        <div>
+                            <h3>${sim.title}</h3>
+                            <p style="font-size:0.9rem; color:var(--text-light); margin-bottom:15px;">${sim.desc}</p>
+                        </div>
+                        <div style="margin-top: auto; padding-top: 15px; border-top: 1px solid var(--border); color: var(--accent); font-weight: 600; font-size: 0.9rem; display: flex; align-items: center; justify-content: space-between;">
+                            <span>Launch Simulator</span>
+                            <svg style="width:16px;height:16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        </div>
+                    </div>
+                `;
+            });
+
+            // "Coming Soon" Placeholders
+            html += `
+                    <div class="card unit-card" style="border-left-color: transparent; border: 2px dashed var(--border); background: transparent; justify-content: center; align-items: center; text-align: center; cursor: default; box-shadow: none;">
+                        <svg style="width:32px;height:32px;color:var(--text-light);margin-bottom:10px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                        <h3 style="color: var(--text-light); font-size: 1.1rem;">More Coming Soon</h3>
+                        <p style="font-size:0.85rem; color:var(--text-light);">Additional algorithm simulators</p>
+                    </div>
+                </div>
+            `;
+            document.getElementById('contentArea').innerHTML = html;
+        }
+        /* ================================================================= */
+
 
         function renderUnit(unitId) {
             const unit = syllabusData.find(u => u.id === unitId);
@@ -1441,28 +1554,3 @@
 </body>
 
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
