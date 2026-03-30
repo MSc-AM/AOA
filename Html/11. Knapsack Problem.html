@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knapsack Algorithms - Interactive Lesson</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MathJax for rendering math formulas -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <style>
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .highlight-calc {
+            background-color: #fef08a !important; /* Yellow 200 */
+            transition: background-color 0.3s;
+        }
+        .highlight-success {
+            background-color: #bbf7d0 !important; /* Green 200 */
+            transition: background-color 0.3s;
+        }
+        .highlight-dependency {
+            background-color: #bfdbfe !important; /* Blue 200 */
+            transition: background-color 0.3s;
+        }
+        .highlight-skip {
+            background-color: #fecaca !important; /* Red 200 */
+            text-decoration: line-through;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+        th, td {
+            border: 1px solid #d1d5db;
+            padding: 0.5rem;
+            text-align: center;
+        }
+        th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 h-screen flex flex-col font-sans">
+
+    <!-- Header & Tabs -->
+    <header class="bg-blue-800 text-white shadow-md z-10">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">Knapsack Algorithms</h1>
+                <p class="text-sm text-blue-200">Exam-Ready Notes Based on Jenny's Lectures</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex space-x-2 bg-blue-900 p-1 rounded-lg">
+                <button id="btn-fractional" onclick="switchTab('fractional')" class="px-4 py-2 rounded-md bg-white text-blue-800 font-bold shadow transition">
+                    Fractional (Greedy)
+                </button>
+                <button id="btn-dp" onclick="switchTab('dp')" class="px-4 py-2 rounded-md text-white hover:bg-blue-700 font-semibold transition">
+                    0/1 Knapsack (DP)
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex flex-col md:flex-row overflow-hidden max-w-7xl mx-auto w-full p-4 gap-4">
+        
+        <!-- Left Panel: Explanations -->
+        <div class="w-full md:w-1/3 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
+            <div class="bg-gray-100 p-4 border-b border-gray-200 font-bold text-lg text-gray-700">
+                Concepts & Explanations
+            </div>
+            <div id="explanation-content" class="p-6 overflow-y-auto flex-grow text-gray-700 text-sm leading-relaxed space-y-4">
+                <!-- Content injected via JS -->
+            </div>
+        </div>
+
+        <!-- Right Panel: Interactive Visualization -->
+        <div class="w-full md:w-2/3 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
+            <div class="bg-gray-100 p-4 border-b border-gray-200 font-bold text-lg text-gray-700 flex justify-between items-center">
+                <span>Algorithm Execution</span>
+                <span id="step-counter" class="text-sm font-normal bg-blue-100 text-blue-800 px-3 py-1 rounded-full">Step 0 / 0</span>
+            </div>
+            
+            <div id="visualization-content" class="p-6 overflow-y-auto flex-grow flex flex-col items-center justify-center">
+                <!-- Data injected via JS -->
+            </div>
+
+            <!-- Controls -->
+            <div class="bg-gray-50 p-4 border-t border-gray-200 flex justify-between items-center">
+                <button onclick="reset()" class="px-4 py-2 rounded bg-gray-200 text-gray-700 hover:bg-gray-300 font-medium transition">
+                    Reset
+                </button>
+                <div class="space-x-2">
+                    <button id="btn-prev" onclick="prevStep()" class="px-4 py-2 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        &larr; Previous Step
+                    </button>
+                    <button id="btn-next" onclick="nextStep()" class="px-6 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 font-bold shadow transition disabled:opacity-50 disabled:cursor-not-allowed">
+                        Next Step &rarr;
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- DATA & STATE ---
+        let currentMode = 'fractional'; // 'fractional' or 'dp'
+        let currentStep = 0;
+
+        // Fractional Data (New Example)
+        const fracItems = [
+            { id: 1, p: 10, w: 2, ratio: 5.00 },
+            { id: 2, p: 15, w: 3, ratio: 5.00 },
+            { id: 3, p: 40, w: 5, ratio: 8.00 },
+            { id: 4, p: 21, w: 7, ratio: 3.00 },
+            { id: 5, p: 12, w: 2, ratio: 6.00 },
+            { id: 6, p: 18, w: 4, ratio: 4.50 },
+            { id: 7, p: 10, w: 5, ratio: 2.00 }
+        ];
+
+        const fracSorted = [...fracItems].sort((a, b) => b.ratio - a.ratio);
+
+        // 0/1 DP Data (New Example)
+        const dpItems = [
+            { id: 1, w: 2, p: 4 },
+            { id: 2, w: 3, p: 5 },
+            { id: 3, w: 6, p: 10 },
+            { id: 4, w: 7, p: 2 }
+        ];
+        const capacity = 8;
+        // Matrix: 5 rows (0-4), 9 cols (0-8)
+        const dpMatrix = [
+            [0, 0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 4, 4, 4, 4, 4, 4, 4],
+            [0, 0, 4, 5, 5, 9, 9, 9, 9],
+            [0, 0, 4, 5, 5, 9, 10, 10, 14],
+            [0, 0, 4, 5, 5, 9, 10, 10, 14]
+        ];
+
+        // --- STEP DEFINITIONS ---
+
+        const fractionalSteps = [
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Problem Statement</h3>
+                    <p>We are given a knapsack (bag) with a maximum capacity <strong>W = 20 kg</strong>, and 7 items, each with a specific profit and weight.</p>
+                    <p>The objective is to select items to maximize the total profit without exceeding the capacity.</p>
+                    <div class="bg-blue-50 p-3 rounded mt-2 border border-blue-100">
+                        <strong>The Golden Rule:</strong> Fractional Knapsack &rarr; Items can be broken into pieces. The Greedy Method works perfectly.
+                    </div>
+                `,
+                render: () => renderFracTable(fracItems, false, false, -1, [])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">The Intuition</h3>
+                    <p>Imagine you have to choose between a heavy rock that sells for $10, or a tiny diamond that also sells for $10. You pick the diamond! It gives a higher <em>value per kilogram</em>.</p>
+                    <h4 class="font-bold mt-4">Step 1: Calculate the Ratio</h4>
+                    <p>Ratio = $\\frac{\\text{Profit}}{\\text{Weight}}$</p>
+                    <p>This tells us exactly how much profit we earn for every 1 kg.</p>
+                `,
+                render: () => renderFracTable(fracItems, true, false, -1, [])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Step 2: Sort in Descending Order</h3>
+                    <p>Why? We want to pack our bag with the most valuable items first before we run out of space.</p>
+                    <p>By picking the items with the highest "Value per kg" first, we guarantee the maximum possible profit.</p>
+                `,
+                render: () => renderFracTable(fracSorted, true, true, -1, [])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Step 3: Selection 1</h3>
+                    <p><strong>Item 3</strong> gives the best value per kg (8.00). It weighs 5 kg.</p>
+                    <p>Our bag can hold 20 kg, so it easily fits. We take the whole item.</p>
+                    <ul class="list-disc pl-5 mt-2">
+                        <li>Profit Added: 40</li>
+                        <li>Weight Used: 5</li>
+                        <li>Remaining Capacity: 20 - 5 = 15</li>
+                    </ul>
+                `,
+                render: () => renderFracTable(fracSorted, true, true, 0, [
+                    { item: 'Item 3', frac: '1 (All)', p: 40, w: 5, rem: 15 }
+                ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Selection 2</h3>
+                    <p>The next best is <strong>Item 5</strong>. It weighs 2 kg.</p>
+                    <p>We have 15 kg of space left, so it easily fits. We take the whole item.</p>
+                    <ul class="list-disc pl-5 mt-2">
+                        <li>Profit Added: 12</li>
+                        <li>Remaining Capacity: 15 - 2 = 13</li>
+                    </ul>
+                `,
+                render: () => renderFracTable(fracSorted, true, true, 1, [
+                    { item: 'Item 3', frac: '1 (All)', p: 40, w: 5, rem: 15 },
+                    { item: 'Item 5', frac: '1 (All)', p: 12, w: 2, rem: 13 }
+                ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Selection 3</h3>
+                    <p>Next is <strong>Item 1</strong>, weighing 2 kg.</p>
+                    <p>We have 13 kg of space left, so it fits perfectly.</p>
+                    <ul class="list-disc pl-5 mt-2">
+                        <li>Profit Added: 10</li>
+                        <li>Remaining Capacity: 13 - 2 = 11</li>
+                    </ul>
+                `,
+                render: () => renderFracTable(fracSorted, true, true, 2, [
+                    { item: 'Item 3', frac: '1 (All)', p: 40, w: 5, rem: 15 },
+                    { item: 'Item 5', frac: '1 (All)', p: 12, w: 2, rem: 13 },
+                    { item: 'Item 1', frac: '1 (All)', p: 10, w: 2, rem: 11 }
+                ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Selection 4</h3>
+                    <p>Next is <strong>Item 2</strong>, weighing 3 kg.</p>
+                    <p>We have 11 kg of space left, so we drop the whole item in.</p>
+                    <ul class="list-disc pl-5 mt-2">
+                        <li>Profit Added: 15</li>
+                        <li>Remaining Capacity: 11 - 3 = 8</li>
+                    </ul>
+                `,
+                render: () => renderFracTable(fracSorted, true, true, 3, [
+                    { item: 'Item 3', frac: '1 (All)', p: 40, w: 5, rem: 15 },
+                    { item: 'Item 5', frac: '1 (All)', p: 12, w: 2, rem: 13 },
+                    { item: 'Item 1', frac: '1 (All)', p: 10, w: 2, rem: 11 },
+                    { item: 'Item 2', frac: '1 (All)', p: 15, w: 3, rem: 8 }
+                ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Selection 5</h3>
+                    <p>Next is <strong>Item 6</strong>, weighing 4 kg.</p>
+                    <p>We have 8 kg space remaining. It fits!</p>
+                    <ul class="list-disc pl-5 mt-2">
+                        <li>Profit Added: 18</li>
+                        <li>Remaining Capacity: 8 - 4 = 4</li>
+                    </ul>
+                `,
+                render: () => renderFracTable(fracSorted, true, true, 4, [
+                    { item: 'Item 3', frac: '1 (All)', p: 40, w: 5, rem: 15 },
+                    { item: 'Item 5', frac: '1 (All)', p: 12, w: 2, rem: 13 },
+                    { item: 'Item 1', frac: '1 (All)', p: 10, w: 2, rem: 11 },
+                    { item: 'Item 2', frac: '1 (All)', p: 15, w: 3, rem: 8 },
+                    { item: 'Item 6', frac: '1 (All)', p: 18, w: 4, rem: 4 }
+                ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Selection 6 (Fractional!)</h3>
+                    <p><strong>Note:</strong> Our remaining capacity is exactly 4 kg, but our next best item (Item 4) weighs 7 kg.</p>
+                    <p>Because it is too heavy to fit entirely, we must break it and take a fraction.</p>
+                    <p>We take exactly what we need: $4/7$ of the item.</p>
+                    <ul class="list-disc pl-5 mt-2">
+                        <li>Profit Added: $21 \\times \\frac{4}{7} = 12$</li>
+                        <li>Weight Used: 4</li>
+                        <li>Remaining Capacity: 4 - 4 = 0</li>
+                    </ul>
+                `,
+                render: () => renderFracTable(fracSorted, true, true, 5, [
+                    { item: 'Item 3', frac: '1 (All)', p: 40, w: 5, rem: 15 },
+                    { item: 'Item 5', frac: '1 (All)', p: 12, w: 2, rem: 13 },
+                    { item: 'Item 1', frac: '1 (All)', p: 10, w: 2, rem: 11 },
+                    { item: 'Item 2', frac: '1 (All)', p: 15, w: 3, rem: 8 },
+                    { item: 'Item 6', frac: '1 (All)', p: 18, w: 4, rem: 4 },
+                    { item: 'Item 4', frac: '4/7', p: 12, w: 4, rem: 0 }
+                ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-green-700">Final Result</h3>
+                    <p>Since our remaining capacity has reached 0, our knapsack is completely full. We stop here and ignore the remaining Item 7.</p>
+                    <p class="font-bold text-xl mt-4">Total Optimal Profit = 107</p>
+                    <div class="bg-green-50 border border-green-200 p-3 mt-4 rounded">
+                        <strong>Why is this Optimal?</strong><br>
+                        By picking items with the highest value per unit of weight, we guarantee every inch of space is filled with the most profitable material. No wasted space.
+                    </div>
+                `,
+                render: () => renderFracTable(fracSorted, true, true, -1, [
+                    { item: 'Item 3', frac: '1 (All)', p: 40, w: 5, rem: 15 },
+                    { item: 'Item 5', frac: '1 (All)', p: 12, w: 2, rem: 13 },
+                    { item: 'Item 1', frac: '1 (All)', p: 10, w: 2, rem: 11 },
+                    { item: 'Item 2', frac: '1 (All)', p: 15, w: 3, rem: 8 },
+                    { item: 'Item 6', frac: '1 (All)', p: 18, w: 4, rem: 4 },
+                    { item: 'Item 4', frac: '4/7', p: 12, w: 4, rem: 0 }
+                ])
+            }
+        ];
+
+        const dpSteps = [
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">0/1 Knapsack Problem</h3>
+                    <p>An item must be picked completely or left behind (0 or 1). It cannot be divided.</p>
+                    <p>The Greedy Method fails here, so we must use a completely different technique called <strong>Dynamic Programming</strong>.</p>
+                    <br>
+                    <h4 class="font-bold">Pre-Processing Step</h4>
+                    <p>Always sort the items in ascending order of their weights before building the matrix.</p>
+                    <p><em>(Our items 2, 3, 6, 7 are already sorted by weight).</em></p>
+                `,
+                render: () => renderDPMatrix(-1, -1, [])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">DP Recurrence Relation</h3>
+                    <p>We solve subproblems step-by-step using a matrix $M$. Rows = items ($i$), Columns = capacity ($w$).</p>
+                    <div class="bg-gray-100 p-3 rounded font-mono text-sm overflow-x-auto">
+                        if i=0 or w=0: M[i,w] = 0<br><br>
+                        if W_i > w (Too heavy): <br>
+                        &nbsp;&nbsp;M[i,w] = M[i-1, w]<br><br>
+                        if W_i <= w (Can fit): <br>
+                        &nbsp;&nbsp;M[i,w] = max( M[i-1, w], P_i + M[i-1, w - W_i] )
+                    </div>
+                    <p class="mt-2 text-sm text-gray-600">First, we initialize row 0 and column 0 to 0.</p>
+                `,
+                render: () => renderDPMatrix(0, 8, []) // Show up to row 0
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Filling Row 1 ($i=1$)</h3>
+                    <p><strong>Item 1:</strong> Weight ($W_1$) = 2, Profit ($P_1$) = 4.</p>
+                    <p>For $w < 2$, we cannot pick the item, so we copy 0.</p>
+                    <p>For $w \\ge 2$, we pick the item and get profit 4.</p>
+                `,
+                render: () => renderDPMatrix(1, 8, [])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Filling Row 2 ($i=2$)</h3>
+                    <p><strong>Item 2:</strong> Weight = 3, Profit = 5.</p>
+                    <p>For $w=1,2$ the capacity is less than 3, copy values from above.</p>
+                    <p><strong>Calculate for $w=4$:</strong><br>
+                    $M[2,4] = \\max(M[1,4], P_2 + M[1, 4-3])$<br>
+                    $= \\max(4, 5 + 0) = 5$</p>
+                    <p class="mt-2 text-sm"><em>Matrix calculates rest of row similarly...</em></p>
+                `,
+                render: () => renderDPMatrix(2, 8, [{r:2, c:4, type:'calc'}, {r:1, c:4, type:'dep'}, {r:1, c:1, type:'dep'}])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Filling Row 3 ($i=3$)</h3>
+                    <p><strong>Item 3:</strong> Weight = 6, Profit = 10.</p>
+                    <p>Copy values for $w < 6$.</p>
+                    <p><strong>Calculate for $w=8$:</strong><br>
+                    $M[3,8] = \\max(M[2,8], P_3 + M[2, 8-6])$<br>
+                    $= \\max(9, 10 + 4) = 14$</p>
+                `,
+                render: () => renderDPMatrix(3, 8, [{r:3, c:8, type:'calc'}, {r:2, c:8, type:'dep'}, {r:2, c:2, type:'dep'}])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Filling Row 4 ($i=4$)</h3>
+                    <p><strong>Item 4:</strong> Weight = 7, Profit = 2.</p>
+                    <p>Copy values for $w < 7$.</p>
+                    <p><strong>Calculate for $w=7$:</strong><br>
+                    $M[4,7] = \\max(M[3,7], P_4 + M[3, 7-7])$<br>
+                    $= \\max(10, 2 + 0) = 10$</p>
+                `,
+                render: () => renderDPMatrix(4, 8, [{r:4, c:7, type:'calc'}, {r:3, c:7, type:'dep'}, {r:3, c:0, type:'dep'}])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Backtracking (Step 1)</h3>
+                    <p>To trace back which items were selected, start at the bottom-right corner <strong>$M[4,8]=14$</strong> and move upwards.</p>
+                    <p><strong>Rule:</strong> If value comes exactly from row above -> Not Selected. If it differs -> Selected.</p>
+                    <p class="mt-2 text-red-600 font-bold">Check M[4,8]:</p>
+                    <p>Upper cell $M[3,8] = 14$. Value is the same.</p>
+                    <p>&rarr; Item 4 is <strong>NOT</strong> selected. Move pointer up.</p>
+                `,
+                render: () => renderDPMatrix(4, 8, [{r:4, c:8, type:'skip'}, {r:3, c:8, type:'calc'}])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Backtracking (Step 2)</h3>
+                    <p class="mt-2 text-green-600 font-bold">Check M[3,8]:</p>
+                    <p>Upper cell $M[2,8] = 9$. Value changed ($14 \\ne 9$).</p>
+                    <p>&rarr; Item 3 <strong>IS</strong> selected.</p>
+                    <p>Remaining weight = $8 - W_3 = 8 - 6 = 2$.</p>
+                    <p>Jump to remaining weight column in row above: <strong>$M[2,2]$</strong>.</p>
+                `,
+                render: () => renderDPMatrix(4, 8, [{r:3, c:8, type:'success'}, {r:2, c:8, type:'dep'}, {r:2, c:2, type:'calc'}])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Backtracking (Step 3)</h3>
+                    <p class="mt-2 text-red-600 font-bold">Check M[2,2]:</p>
+                    <p>Upper cell $M[1,2] = 4$. Value is the same.</p>
+                    <p>&rarr; Item 2 is <strong>NOT</strong> selected. Move pointer up.</p>
+                `,
+                render: () => renderDPMatrix(4, 8, [{r:3, c:8, type:'success'}, {r:2, c:2, type:'skip'}, {r:1, c:2, type:'calc'}])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Backtracking (Step 4)</h3>
+                    <p class="mt-2 text-green-600 font-bold">Check M[1,2]:</p>
+                    <p>Upper cell $M[0,2] = 0$. Value changed ($4 \\ne 0$).</p>
+                    <p>&rarr; Item 1 <strong>IS</strong> selected.</p>
+                    <p>Remaining weight = $2 - W_1 = 2 - 2 = 0$.</p>
+                    <p>Move to $M[0,0]$. We are done!</p>
+                `,
+                render: () => renderDPMatrix(4, 8, [{r:3, c:8, type:'success'}, {r:1, c:2, type:'success'}, {r:0, c:2, type:'dep'}, {r:0, c:0, type:'calc'}])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-green-700">Final Answer</h3>
+                    <p><strong>Selected Items:</strong> Item 1 and Item 3.</p>
+                    <p><strong>Total Weight:</strong> $W_1 + W_3 = 2 + 6 = 8$ kg</p>
+                    <p><strong>Maximum Profit:</strong> $P_1 + P_3 = 4 + 10 = 14$</p>
+                `,
+                render: () => renderDPMatrix(4, 8, [{r:3, c:8, type:'success'}, {r:1, c:2, type:'success'}])
+            }
+        ];
+
+        // --- RENDER FUNCTIONS ---
+
+        function renderFracTable(items, showRatio, sorted, activeRowIdx, selections) {
+            let html = `
+                <div class="w-full fade-in">
+                    <h4 class="font-bold mb-2 text-center text-gray-700">Items Data Matrix ${sorted ? '(Sorted by Ratio)' : ''}</h4>
+                    <table class="text-sm md:text-base bg-white shadow-sm rounded-lg overflow-hidden">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Profit (P)</th>
+                                <th>Weight (W)</th>
+                                ${showRatio ? '<th>Calculation (P/W)</th><th>Ratio (Value/kg)</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            items.forEach((item, index) => {
+                let rowClass = index === activeRowIdx ? 'highlight-calc' : '';
+                html += `
+                    <tr class="${rowClass}">
+                        <td class="font-semibold">Item ${item.id}</td>
+                        <td>${item.p}</td>
+                        <td>${item.w}</td>
+                        ${showRatio ? `<td>$${item.p}/${item.w}$</td><td class="font-bold text-blue-600">${item.ratio.toFixed(2)}</td>` : ''}
+                    </tr>
+                `;
+            });
+            html += `</tbody></table></div>`;
+
+            if (selections.length > 0) {
+                html += `
+                    <div class="w-full mt-8 fade-in">
+                        <h4 class="font-bold mb-2 text-center text-gray-700">Selection Process (Capacity = 15 kg)</h4>
+                        <table class="text-sm md:text-base bg-white shadow-sm rounded-lg overflow-hidden">
+                            <thead>
+                                <tr class="bg-blue-50">
+                                    <th>Item</th>
+                                    <th>Fraction Taken</th>
+                                    <th>Profit Added</th>
+                                    <th>Weight Used</th>
+                                    <th>Remaining Cap.</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                selections.forEach((sel, i) => {
+                    let isLast = i === selections.length - 1;
+                    html += `
+                        <tr class="${isLast ? 'highlight-success font-bold' : ''}">
+                            <td>${sel.item}</td>
+                            <td>${sel.frac}</td>
+                            <td>${sel.p}</td>
+                            <td>${sel.w}</td>
+                            <td>${sel.rem}</td>
+                        </tr>
+                    `;
+                });
+                html += `</tbody></table></div>`;
+            }
+            return html;
+        }
+
+        function renderDPMatrix(maxRow, maxCol, highlights = []) {
+            let html = `
+                <div class="w-full fade-in overflow-x-auto">
+                    <h4 class="font-bold mb-4 text-center text-gray-700">DP Matrix ($W=8$, 4 Items)</h4>
+                    <table class="text-sm bg-white shadow-sm rounded-lg">
+                        <thead>
+                            <tr>
+                                <th class="bg-gray-200">i</th>
+                                <th class="bg-gray-200">$W_i$</th>
+                                <th class="bg-gray-200">$P_i$</th>
+            `;
+            for (let w = 0; w <= 8; w++) {
+                html += `<th class="bg-blue-50 text-blue-800">$w=${w}$</th>`;
+            }
+            html += `</tr></thead><tbody>`;
+
+            for (let i = 0; i <= 4; i++) {
+                let item = i === 0 ? {w:'-', p:'-'} : dpItems[i-1];
+                html += `<tr>
+                    <td class="font-bold bg-gray-50">${i}</td>
+                    <td class="bg-gray-50">${item.w}</td>
+                    <td class="bg-gray-50">${item.p}</td>
+                `;
+                
+                for (let w = 0; w <= 8; w++) {
+                    let val = (i <= maxRow && w <= maxCol) ? dpMatrix[i][w] : '';
+                    let highlightClass = '';
+                    
+                    // Apply highlights
+                    const hl = highlights.find(h => h.r === i && h.c === w);
+                    if (hl) {
+                        if (hl.type === 'calc') highlightClass = 'highlight-calc font-bold';
+                        if (hl.type === 'dep') highlightClass = 'highlight-dependency text-blue-800 font-bold';
+                        if (hl.type === 'success') highlightClass = 'highlight-success font-bold text-green-800';
+                        if (hl.type === 'skip') highlightClass = 'highlight-skip text-red-500';
+                    }
+
+                    html += `<td class="${highlightClass}">${val}</td>`;
+                }
+                html += `</tr>`;
+            }
+            html += `</tbody></table></div>`;
+            
+            // Legend
+            html += `
+                <div class="mt-4 flex gap-4 text-xs text-gray-600 justify-center">
+                    <div class="flex items-center"><span class="w-3 h-3 bg-yellow-200 inline-block mr-1 border border-gray-400"></span> Calculating/Current</div>
+                    <div class="flex items-center"><span class="w-3 h-3 bg-blue-200 inline-block mr-1 border border-gray-400"></span> Dependency</div>
+                    <div class="flex items-center"><span class="w-3 h-3 bg-green-200 inline-block mr-1 border border-gray-400"></span> Selected</div>
+                    <div class="flex items-center"><span class="w-3 h-3 bg-red-200 inline-block mr-1 border border-gray-400"></span> Skipped</div>
+                </div>
+            `;
+            
+            return html;
+        }
+
+        // --- CONTROLLER LOGIC ---
+
+        function getSteps() {
+            return currentMode === 'fractional' ? fractionalSteps : dpSteps;
+        }
+
+        function updateUI() {
+            const steps = getSteps();
+            const stepData = steps[currentStep];
+
+            // Update explanation content
+            document.getElementById('explanation-content').innerHTML = stepData.explain;
+            
+            // Update visualization content
+            document.getElementById('visualization-content').innerHTML = stepData.render();
+
+            // Re-render MathJax
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+
+            // Update step counter & buttons
+            document.getElementById('step-counter').innerText = `Step ${currentStep + 1} / ${steps.length}`;
+            
+            document.getElementById('btn-prev').disabled = currentStep === 0;
+            document.getElementById('btn-next').disabled = currentStep === steps.length - 1;
+
+            // Update tab styles
+            const btnFrac = document.getElementById('btn-fractional');
+            const btnDp = document.getElementById('btn-dp');
+            
+            if (currentMode === 'fractional') {
+                btnFrac.className = "px-4 py-2 rounded-md bg-white text-blue-800 font-bold shadow transition";
+                btnDp.className = "px-4 py-2 rounded-md text-white hover:bg-blue-700 font-semibold transition";
+            } else {
+                btnDp.className = "px-4 py-2 rounded-md bg-white text-blue-800 font-bold shadow transition";
+                btnFrac.className = "px-4 py-2 rounded-md text-white hover:bg-blue-700 font-semibold transition";
+            }
+        }
+
+        function switchTab(mode) {
+            if (currentMode !== mode) {
+                currentMode = mode;
+                currentStep = 0;
+                updateUI();
+            }
+        }
+
+        function nextStep() {
+            if (currentStep < getSteps().length - 1) {
+                currentStep++;
+                updateUI();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateUI();
+            }
+        }
+
+        function reset() {
+            currentStep = 0;
+            updateUI();
+        }
+
+        // Initialize App
+        window.onload = () => {
+            updateUI();
+        };
+    </script>
+</body>
+</html>

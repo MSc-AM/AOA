@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radix Sort Algorithm - Interactive Educational Tool</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- MathJax for rendering Mathematical Formulas -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+        
+        /* Utility for animation */
+        .card-anim {
+            transition: left 0.7s ease-in-out, top 0.7s ease-in-out, transform 0.3s ease, box-shadow 0.3s ease;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased">
+
+    <!-- Navigation Header -->
+    <nav class="sticky top-0 z-50 bg-indigo-900 text-white shadow-lg">
+        <div class="max-w-[1800px] mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                <h1 class="text-2xl font-bold tracking-wide">Radix Sort <span class="text-indigo-300 font-light">Visualizer</span></h1>
+            </div>
+            <div class="hidden md:flex gap-8 text-sm font-medium">
+                <a href="#intro" class="hover:text-indigo-300 transition-colors uppercase tracking-wider">Theory</a>
+                <a href="#visualization" class="hover:text-indigo-300 transition-colors uppercase tracking-wider">Interactive App</a>
+                <a href="#walkthrough" class="hover:text-indigo-300 transition-colors uppercase tracking-wider">Example</a>
+                <a href="#complexity" class="hover:text-indigo-300 transition-colors uppercase tracking-wider">Complexity</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="max-w-[1800px] mx-auto px-6 py-10 space-y-16">
+
+        <!-- Header Title Section -->
+        <header class="text-center space-y-4 max-w-4xl mx-auto">
+            <h2 class="text-5xl font-extrabold text-slate-900 tracking-tight">Understanding Radix Sort</h2>
+            <p class="text-xl text-slate-600 leading-relaxed">
+                Algorithm Theory and Step-by-Step Analysis. An educational walkthrough of non-comparison-based sorting.
+            </p>
+        </header>
+
+        <!-- SECTION 1: Intro & Working Principle -->
+        <section id="intro" class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+            
+            <!-- Introduction -->
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                <h3 class="text-2xl font-bold text-indigo-800 mb-6 flex items-center gap-2">
+                    <span class="bg-indigo-100 text-indigo-800 w-8 h-8 rounded flex items-center justify-center text-sm">1</span> 
+                    Introduction
+                </h3>
+                <p class="mb-4 text-lg">Radix Sort is a unique sorting technique that differs significantly from standard algorithms like Bubble Sort, Merge Sort, or Quick Sort.</p>
+                <ul class="space-y-4 text-lg">
+                    <li class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-indigo-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <div><strong class="text-slate-900">Non-Comparison Based:</strong> Unlike other algorithms that compare two elements (e.g., is $A > B$?), Radix Sort does not compare elements directly to determine their order.</div>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-indigo-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <div><strong class="text-slate-900">Digit-by-Digit Sorting:</strong> It sorts numbers by processing individual digits.</div>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <svg class="w-6 h-6 text-indigo-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        <div><strong class="text-slate-900">Direction:</strong> It typically works from the Least Significant Bit (LSB) to the Most Significant Bit (MSB) (i.e., from the unit place to the hundreds/thousands place).</div>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Working Principle -->
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                <h3 class="text-2xl font-bold text-indigo-800 mb-6 flex items-center gap-2">
+                    <span class="bg-indigo-100 text-indigo-800 w-8 h-8 rounded flex items-center justify-center text-sm">2</span> 
+                    Working Principle
+                </h3>
+                <p class="mb-4 text-lg">The algorithm follows a systematic approach to sort a list of integers:</p>
+                <ol class="list-decimal list-inside space-y-3 text-lg mb-6 text-slate-700">
+                    <li><strong>Identify Maximum Digits:</strong> Find the number with the maximum number of digits ($d$).</li>
+                    <li><strong>Pad with Zeros:</strong> Add leading zeros to all numbers so they all have exactly $d$ digits.</li>
+                    <li><strong>Sort by Position:</strong> Start from the rightmost digit (Unit place) and move left:
+                        <ul class="list-disc list-inside ml-8 mt-2 space-y-1 text-slate-600">
+                            <li>Pass 1: Sort based on Unit place.</li>
+                            <li>Pass 2: Sort based on Tens place.</li>
+                            <li>Pass $d$: Sort based on the Most Significant place.</li>
+                        </ul>
+                    </li>
+                </ol>
+                
+                <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg">
+                    <h4 class="font-bold text-yellow-800 text-lg mb-1">Crucial Concept: Stability</h4>
+                    <p class="text-yellow-900">During each pass, if two numbers have the same digit at the current position, their relative order must remain unchanged. This property is known as <strong>Stability</strong>.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: Interactive Visualization -->
+        <section id="visualization" class="bg-white rounded-3xl shadow-lg border border-slate-200 overflow-hidden">
+            <!-- App Header -->
+            <div class="bg-slate-800 text-white px-8 py-5 flex flex-col xl:flex-row items-center justify-between gap-4">
+                <div>
+                    <h3 class="text-2xl font-bold">Interactive Visualization</h3>
+                    <p class="text-slate-300 text-sm mt-1">Array: <span class="font-mono text-indigo-300">512, 343, 064, 125, 212, 034, 543, 121</span></p>
+                </div>
+                
+                <!-- Controls -->
+                <div class="flex flex-wrap justify-center items-center gap-2 md:gap-4 bg-slate-700 p-2 rounded-xl">
+                    <button id="btn-prev" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg font-semibold transition-colors flex items-center gap-2 text-sm md:text-base">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                        Prev
+                    </button>
+                    <button id="btn-play" class="px-6 py-2 bg-indigo-500 hover:bg-indigo-400 text-white rounded-lg font-bold transition-colors shadow-md flex items-center gap-2 w-36 justify-center text-sm md:text-base">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                        Auto Play
+                    </button>
+                    <button id="btn-next" class="px-4 py-2 bg-slate-600 hover:bg-slate-500 rounded-lg font-semibold transition-colors flex items-center gap-2 text-sm md:text-base">
+                        Next
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                    <div class="w-px h-8 bg-slate-500 mx-2 hidden md:block"></div>
+                    <button id="btn-reset" class="px-4 py-2 text-slate-300 hover:text-white transition-colors flex items-center gap-1" title="Restart">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Narrative Box -->
+            <div class="bg-indigo-50 border-b border-indigo-100 px-8 py-5 min-h-[110px]">
+                <div class="flex flex-col md:flex-row md:items-center gap-4">
+                    <span id="pass-badge" class="inline-block px-4 py-1.5 bg-indigo-600 text-white rounded-full font-bold uppercase tracking-wider text-sm shadow-sm whitespace-nowrap">INIT</span>
+                    <p id="narrative-text" class="text-lg md:text-xl font-semibold text-indigo-900 leading-tight">Loading visualization...</p>
+                </div>
+                <!-- Progress bar -->
+                <div class="w-full bg-indigo-200 rounded-full h-1.5 mt-4">
+                  <div id="progress-bar" class="bg-indigo-600 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Stage Area -->
+            <div id="vis-container" class="relative w-full h-[450px] bg-slate-50 flex flex-col items-center justify-center pt-8 overflow-hidden select-none">
+                
+                <!-- Top Row (Source) -->
+                <div class="flex flex-col items-center w-full z-0 mb-8">
+                    <span class="text-slate-500 font-bold mb-3 tracking-widest uppercase text-sm">Source Array</span>
+                    <div id="top-row-slots" class="flex gap-2 md:gap-4">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Arrow Divider -->
+                <div class="text-indigo-300 mb-8 mt-2">
+                    <svg class="w-10 h-10 animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                </div>
+
+                <!-- Bottom Row (Dest) -->
+                <div class="flex flex-col items-center w-full z-0">
+                    <span class="text-slate-500 font-bold mb-3 tracking-widest uppercase text-sm">Destination Array (Current Pass)</span>
+                    <div id="bot-row-slots" class="flex gap-2 md:gap-4">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+
+                <!-- Absolutely Positioned Cards Layer -->
+                <div id="cards-layer" class="absolute top-0 left-0 w-full h-full pointer-events-none z-20">
+                    <!-- Filled by JS -->
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: Step-by-step Example (From PDF matched to Complex Array) -->
+        <section id="walkthrough" class="bg-white p-10 rounded-3xl shadow-sm border border-slate-200">
+            <h3 class="text-3xl font-bold text-slate-900 mb-2 flex items-center gap-3">
+                <span class="bg-indigo-100 text-indigo-800 w-10 h-10 rounded-lg flex items-center justify-center text-xl">3</span> 
+                Detailed Example Walkthrough
+            </h3>
+            <p class="text-lg text-slate-600 mb-8">Let's look at a complex unsorted array specifically designed to test stability: <span class="font-mono font-bold text-indigo-700 bg-indigo-50 px-2 py-1 rounded">{512, 343, 064, 125, 212, 034, 543, 121}</span></p>
+            
+            <div class="mb-8">
+                <h4 class="text-xl font-bold text-slate-800 mb-2">Step 1: Preparation (Padding)</h4>
+                <p class="text-lg text-slate-700 bg-slate-50 p-4 rounded-lg border border-slate-200">The largest numbers have 3 digits. Ensure all numbers have 3 digits by adding leading zeros where necessary (e.g., $64 \rightarrow 064$, $34 \rightarrow 034$).</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Pass 1 -->
+                <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
+                    <div class="bg-blue-50 px-5 py-3 border-b border-blue-100 font-bold text-blue-900 text-lg">Pass 1: Sort by Unit Place (LSB)</div>
+                    <div class="p-0 flex-grow bg-white">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-slate-50 text-slate-600">
+                                <tr>
+                                    <th class="p-3 border-b border-slate-200">Number</th>
+                                    <th class="p-3 border-b border-slate-200">Unit</th>
+                                    <th class="p-3 border-b border-slate-200">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                                <tr><td class="p-3 font-mono">12<strong class="text-red-600">1</strong></td><td class="p-3">1</td><td class="p-3">Placed 1st</td></tr>
+                                <tr class="bg-slate-50"><td class="p-3 font-mono">51<strong class="text-red-600">2</strong></td><td class="p-3">2</td><td class="p-3">Placed 2nd</td></tr>
+                                <tr><td class="p-3 font-mono">21<strong class="text-red-600">2</strong></td><td class="p-3">2</td><td class="p-3 text-xs text-slate-500 leading-tight">Placed 3rd<br>(Maintains order after 512)</td></tr>
+                                <tr class="bg-slate-50"><td class="p-3 font-mono">34<strong class="text-red-600">3</strong></td><td class="p-3">3</td><td class="p-3">Placed 4th</td></tr>
+                                <tr><td class="p-3 font-mono">54<strong class="text-red-600">3</strong></td><td class="p-3">3</td><td class="p-3 text-xs text-slate-500 leading-tight">Placed 5th<br>(Maintains order after 343)</td></tr>
+                                <tr class="bg-slate-50"><td class="p-3 font-mono">06<strong class="text-red-600">4</strong></td><td class="p-3">4</td><td class="p-3">Placed 6th</td></tr>
+                                <tr><td class="p-3 font-mono">03<strong class="text-red-600">4</strong></td><td class="p-3">4</td><td class="p-3 text-xs text-slate-500 leading-tight">Placed 7th<br>(Maintains order after 064)</td></tr>
+                                <tr class="bg-slate-50"><td class="p-3 font-mono">12<strong class="text-red-600">5</strong></td><td class="p-3">5</td><td class="p-3">Placed 8th</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="bg-slate-100 p-3 text-center border-t border-slate-200 text-xs md:text-sm font-mono text-slate-700">
+                        {121, 512, 212, 343, 543, 064, 034, 125}
+                    </div>
+                </div>
+
+                <!-- Pass 2 -->
+                <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
+                    <div class="bg-indigo-50 px-5 py-3 border-b border-indigo-100 font-bold text-indigo-900 text-lg">Pass 2: Sort by Tens Place</div>
+                    <div class="p-0 flex-grow bg-white">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-slate-50 text-slate-600">
+                                <tr>
+                                    <th class="p-3 border-b border-slate-200">Number</th>
+                                    <th class="p-3 border-b border-slate-200">Tens</th>
+                                    <th class="p-3 border-b border-slate-200">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                                <tr><td class="p-3 font-mono">5<strong class="text-red-600">1</strong>2</td><td class="p-3">1</td><td class="p-3">Placed 1st</td></tr>
+                                <tr class="bg-slate-50"><td class="p-3 font-mono">2<strong class="text-red-600">1</strong>2</td><td class="p-3">1</td><td class="p-3 text-xs text-slate-500 leading-tight">Placed 2nd<br>(Maintains order after 512)</td></tr>
+                                <tr><td class="p-3 font-mono">1<strong class="text-red-600">2</strong>1</td><td class="p-3">2</td><td class="p-3">Placed 3rd</td></tr>
+                                <tr class="bg-slate-50"><td class="p-3 font-mono">1<strong class="text-red-600">2</strong>5</td><td class="p-3">2</td><td class="p-3 text-xs text-slate-500 leading-tight">Placed 4th<br>(Maintains order after 121)</td></tr>
+                                <tr><td class="p-3 font-mono">0<strong class="text-red-600">3</strong>4</td><td class="p-3">3</td><td class="p-3">Placed 5th</td></tr>
+                                <tr class="bg-slate-50"><td class="p-3 font-mono">3<strong class="text-red-600">4</strong>3</td><td class="p-3">4</td><td class="p-3">Placed 6th</td></tr>
+                                <tr><td class="p-3 font-mono">5<strong class="text-red-600">4</strong>3</td><td class="p-3">4</td><td class="p-3 text-xs text-slate-500 leading-tight">Placed 7th<br>(Maintains order after 343)</td></tr>
+                                <tr class="bg-slate-50"><td class="p-3 font-mono">0<strong class="text-red-600">6</strong>4</td><td class="p-3">6</td><td class="p-3">Placed 8th</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="bg-slate-100 p-3 text-center border-t border-slate-200 text-xs md:text-sm font-mono text-slate-700">
+                        {512, 212, 121, 125, 034, 343, 543, 064}
+                    </div>
+                </div>
+
+                <!-- Pass 3 -->
+                <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm flex flex-col">
+                    <div class="bg-purple-50 px-5 py-3 border-b border-purple-100 font-bold text-purple-900 text-lg">Pass 3: Sort by 100s (MSB)</div>
+                    <div class="p-0 flex-grow bg-white">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-slate-50 text-slate-600">
+                                <tr>
+                                    <th class="p-3 border-b border-slate-200">Number</th>
+                                    <th class="p-3 border-b border-slate-200">100s</th>
+                                    <th class="p-3 border-b border-slate-200">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100 text-slate-700 font-medium">
+                                <tr><td class="p-3 font-mono"><strong class="text-red-600">0</strong>34</td><td class="p-3">0</td><td class="p-3">Placed 1st</td></tr>
+                                <tr class="bg-slate-50"><td class="p-3 font-mono"><strong class="text-red-600">0</strong>64</td><td class="p-3">0</td><td class="p-3 text-xs text-slate-500 leading-tight">Placed 2nd<br>(Maintains order after 034)</td></tr>
+                                <tr><td class="p-3 font-mono"><strong class="text-red-600">1</strong>21</td><td class="p-3">1</td><td class="p-3">Placed 3rd</td></tr>
+                                <tr class="bg-slate-50"><td class="p-3 font-mono"><strong class="text-red-600">1</strong>25</td><td class="p-3">1</td><td class="p-3 text-xs text-slate-500 leading-tight">Placed 4th<br>(Maintains order after 121)</td></tr>
+                                <tr><td class="p-3 font-mono"><strong class="text-red-600">2</strong>12</td><td class="p-3">2</td><td class="p-3">Placed 5th</td></tr>
+                                <tr class="bg-slate-50"><td class="p-3 font-mono"><strong class="text-red-600">3</strong>43</td><td class="p-3">3</td><td class="p-3">Placed 6th</td></tr>
+                                <tr><td class="p-3 font-mono"><strong class="text-red-600">5</strong>12</td><td class="p-3">5</td><td class="p-3">Placed 7th</td></tr>
+                                <tr class="bg-slate-50"><td class="p-3 font-mono"><strong class="text-red-600">5</strong>43</td><td class="p-3">5</td><td class="p-3 text-xs text-slate-500 leading-tight">Placed 8th<br>(Maintains order after 512)</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="bg-green-100 p-3 text-center border-t border-green-200 text-xs md:text-sm font-mono text-green-800 font-bold">
+                        {034, 064, 121, 125, 212, 343, 512, 543}
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: Complexity -->
+        <section id="complexity" class="bg-white p-10 rounded-3xl shadow-sm border border-slate-200">
+            <h3 class="text-3xl font-bold text-slate-900 mb-6 flex items-center gap-3">
+                <span class="bg-indigo-100 text-indigo-800 w-10 h-10 rounded-lg flex items-center justify-center text-xl">4</span> 
+                Analysis of Radix Sort
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10 mb-8">
+                <!-- Time Complexity -->
+                <div>
+                    <h4 class="text-2xl font-semibold text-indigo-800 mb-4 border-b border-indigo-100 pb-2">Time Complexity</h4>
+                    <p class="text-lg text-slate-700 mb-4">The time complexity of Radix Sort depends on the number of digits ($d$) and the number of elements ($n$). Since it typically uses a stable intermediate sort (like Counting Sort) for each digit:</p>
+                    
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 mb-4 text-center">
+                        <div class="text-2xl font-bold text-slate-800">$\text{Time Complexity} = O(d \times (n+b))$</div>
+                    </div>
+                    
+                    <ul class="space-y-2 text-slate-700 text-lg">
+                        <li><strong>$d$:</strong> The number of digits in the maximum element.</li>
+                        <li><strong>$n$:</strong> The number of elements in the array.</li>
+                        <li><strong>$b$:</strong> The base of the number system (e.g., 10 for decimal numbers).</li>
+                    </ul>
+                    
+                    <p class="text-lg text-slate-700 mt-4 bg-indigo-50/50 p-4 rounded-lg"><strong>Note:</strong> If $d$ is constant and $b$ is small enough (e.g., $b=10$), Radix Sort operates in Linear Time $O(n)$, making it asymptotically faster than comparison-based sorts for specific datasets.</p>
+                </div>
+
+                <!-- Space Complexity -->
+                <div>
+                    <h4 class="text-2xl font-semibold text-indigo-800 mb-4 border-b border-indigo-100 pb-2">Space Complexity</h4>
+                    <p class="text-lg text-slate-700 mb-4">Radix Sort requires auxiliary space for the buckets (based on the base $b$) and the output array during the intermediate sorting steps.</p>
+                    
+                    <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 text-center">
+                        <div class="text-2xl font-bold text-slate-800">$\text{Space Complexity} = O(n+b)$</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Table -->
+            <h4 class="text-2xl font-semibold text-indigo-800 mb-4 border-b border-indigo-100 pb-2">Comparison with Other Algorithms</h4>
+            <div class="overflow-hidden rounded-xl border border-slate-200 shadow-sm">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-800 text-lg border-b border-slate-200">
+                            <th class="p-4 font-bold">Feature</th>
+                            <th class="p-4 font-bold">Radix Sort</th>
+                            <th class="p-4 font-bold">Quick Sort / Merge Sort</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-lg">
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="p-4 font-semibold text-slate-700">Type</td>
+                            <td class="p-4 text-indigo-700 font-medium bg-indigo-50/30">Non-Comparison Based</td>
+                            <td class="p-4 text-slate-600">Comparison Based</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="p-4 font-semibold text-slate-700">Best Case</td>
+                            <td class="p-4 text-indigo-700 font-medium bg-indigo-50/30">$O(d \times (n+b))$</td>
+                            <td class="p-4 text-slate-600">$O(n \log n)$</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="p-4 font-semibold text-slate-700">Constraint</td>
+                            <td class="p-4 text-indigo-700 font-medium bg-indigo-50/30">Efficient for integers/strings</td>
+                            <td class="p-4 text-slate-600">General purpose</td>
+                        </tr>
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="p-4 font-semibold text-slate-700">In-Place?</td>
+                            <td class="p-4 text-indigo-700 font-medium bg-indigo-50/30">No (Requires extra space)</td>
+                            <td class="p-4 text-slate-600">Quick Sort is in-place</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+        
+        <footer class="text-center text-slate-500 py-8 text-sm">
+            <p>Designed for educational purposes. Step-by-step logic explicitly follows standard computer science Radix Sort parameters.</p>
+        </footer>
+
+    </main>
+
+    <!-- JavaScript for the Interactive Visualization -->
+    <script>
+        // ---------------------------------------------------------
+        // State and Setup Variables
+        // ---------------------------------------------------------
+        const initialArrayData = ['512', '343', '064', '125', '212', '034', '543', '121'];
+        const maxDigits = 3;
+        
+        let cards = []; // Stores DOM element refs and metadata
+        let states = []; // Pre-calculated animation steps
+        let currentStateIndex = 0;
+        
+        let isPlaying = false;
+        let playInterval = null;
+        
+        // DOM Elements
+        const visContainer = document.getElementById('vis-container');
+        const cardsLayer = document.getElementById('cards-layer');
+        const topRowSlots = document.getElementById('top-row-slots');
+        const botRowSlots = document.getElementById('bot-row-slots');
+        const narrativeText = document.getElementById('narrative-text');
+        const passBadge = document.getElementById('pass-badge');
+        const progressBar = document.getElementById('progress-bar');
+        
+        // ---------------------------------------------------------
+        // Initialization
+        // ---------------------------------------------------------
+        window.addEventListener('load', () => {
+            buildDOM();
+            generateStates();
+            
+            // Give DOM a tiny moment to settle geometry before initial render
+            setTimeout(() => {
+                renderState(0);
+            }, 100);
+            
+            setupControls();
+        });
+
+        // Handle Resizing (recalculate positions to stay responsive)
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            // Disable animations temporarily
+            cards.forEach(c => c.el.style.transition = 'none');
+            
+            resizeTimer = setTimeout(() => {
+                renderState(currentStateIndex);
+                // Re-enable animations
+                setTimeout(() => {
+                    cards.forEach(c => c.el.style.transition = ''); 
+                }, 50);
+            }, 100);
+        });
+
+        // ---------------------------------------------------------
+        // Build Initial DOM Structure
+        // ---------------------------------------------------------
+        function buildDOM() {
+            // 1. Create Row Slots
+            initialArrayData.forEach((val, i) => {
+                // Top Slot
+                const topSlot = document.createElement('div');
+                topSlot.id = `top-slot-${i}`;
+                topSlot.className = 'w-12 h-12 md:w-16 md:h-16 border-2 border-dashed border-slate-300 rounded-xl bg-slate-100 shadow-inner';
+                topRowSlots.appendChild(topSlot);
+
+                // Bottom Slot
+                const botSlot = document.createElement('div');
+                botSlot.id = `bot-slot-${i}`;
+                botSlot.className = 'w-12 h-12 md:w-16 md:h-16 border-2 border-dashed border-indigo-300 rounded-xl bg-indigo-50 shadow-inner';
+                botRowSlots.appendChild(botSlot);
+            });
+
+            // 2. Create Moving Cards
+            initialArrayData.forEach((val, i) => {
+                const card = document.createElement('div');
+                card.id = `card-${i}`;
+                card.className = 'absolute w-12 h-12 md:w-16 md:h-16 bg-white border-[3px] border-indigo-500 rounded-xl shadow-lg flex items-center justify-center text-lg md:text-xl font-mono text-slate-800 card-anim z-10';
+                
+                // Wrap each digit in a span for individual highlighting
+                let digitsHTML = val.split('').map(d => `<span class="digit-span transition-colors duration-300">${d}</span>`).join('');
+                card.innerHTML = `<div class="flex tracking-widest">${digitsHTML}</div>`;
+                
+                cardsLayer.appendChild(card);
+                cards.push({ id: `card-${i}`, val: val, el: card });
+            });
+        }
+
+        // ---------------------------------------------------------
+        // Generate Step-by-Step States (The Core Logic exactly like PDF)
+        // ---------------------------------------------------------
+        function generateStates() {
+            states = [];
+            // Map to track current logical positions of cards by their ID
+            let currentArr = cards.map(c => c.id);
+            const passNames = ['Units (LSB)', 'Tens', 'Hundreds (MSB)'];
+
+            // Initial State (State 0)
+            states.push({
+                text: "Initial Array. We sort by checking digits (0-9) and placing elements consecutively in the correct order.",
+                passLabel: 'INIT',
+                layout: currentArr.map((id, idx) => ({ id, row: 'top', index: idx, highlight: false, activeDigitIndex: null }))
+            });
+
+            // Loop through each digit position (Pass)
+            for (let pass = 0; pass < maxDigits; pass++) {
+                const digitPosIndex = maxDigits - 1 - pass; // 2, 1, 0
+                let destArr = Array(currentArr.length).fill(null);
+                let destIdx = 0;
+
+                // State: Pass Intro
+                states.push({
+                    text: `Pass ${pass+1}: Sorting by ${passNames[pass]}. Scanning array for smallest to largest digits.`,
+                    passLabel: `PASS ${pass+1}`,
+                    layout: currentArr.map((id, idx) => ({ id, row: 'top', index: idx, highlight: true, highlightColor: 'none', activeDigitIndex: digitPosIndex }))
+                });
+
+                // Scan 0 through 9
+                for (let d = 0; d <= 9; d++) {
+                    // Find items in currentArr with this digit
+                    let itemsWithDigit = currentArr.filter(id => {
+                        if (!id) return false;
+                        let val = cards.find(c => c.id === id).val;
+                        return parseInt(val[digitPosIndex]) === d;
+                    });
+
+                    if (itemsWithDigit.length > 0) {
+                        // State: Highlight items found
+                        let searchLayout = [];
+                        currentArr.forEach((id, idx) => {
+                            if (id) {
+                                let match = itemsWithDigit.includes(id);
+                                searchLayout.push({ id, row: 'top', index: idx, highlight: match, highlightColor: match ? 'yellow' : 'none', activeDigitIndex: digitPosIndex });
+                            }
+                        });
+                        destArr.forEach((id, idx) => {
+                            if (id) searchLayout.push({ id, row: 'bot', index: idx, highlight: false, highlightColor: 'none', activeDigitIndex: digitPosIndex });
+                        });
+
+                        let valsStr = itemsWithDigit.map(id => cards.find(c=>c.id===id).val).join(', ');
+                        
+                        states.push({
+                            text: `Found elements with digit <strong>${d}</strong>: <span class="font-mono text-indigo-700">${valsStr}</span>.`,
+                            passLabel: `PASS ${pass+1}`,
+                            layout: searchLayout
+                        });
+
+                        // State: Move them to destination
+                        itemsWithDigit.forEach(id => {
+                            // Remove from top
+                            let srcIdx = currentArr.indexOf(id);
+                            currentArr[srcIdx] = null;
+                            
+                            // Add to bottom
+                            destArr[destIdx] = id;
+                            
+                            let moveLayout = [];
+                            currentArr.forEach((cid, idx) => {
+                                if (cid) moveLayout.push({ id: cid, row: 'top', index: idx, highlight: false, highlightColor: 'none', activeDigitIndex: digitPosIndex });
+                            });
+                            destArr.forEach((cid, idx) => {
+                                if (cid) moveLayout.push({ id: cid, row: 'bot', index: idx, highlight: cid === id, highlightColor: 'green', activeDigitIndex: digitPosIndex });
+                            });
+
+                            let actionText = `Moving <span class="font-mono text-indigo-700">${cards.find(c=>c.id===id).val}</span> to position ${destIdx + 1} in the new array.`;
+                            if (itemsWithDigit.length > 1 && id !== itemsWithDigit[0]) {
+                                actionText += ` (Maintains relative order)`;
+                            }
+
+                            states.push({
+                                text: actionText,
+                                passLabel: `PASS ${pass+1}`,
+                                layout: moveLayout
+                            });
+
+                            destIdx++;
+                        });
+                    }
+                }
+
+                // Finalize array state for next pass
+                currentArr = [...destArr];
+                
+                states.push({
+                    text: `Pass ${pass+1} Complete. The elements are successfully sorted by their ${passNames[pass]}.`,
+                    passLabel: `PASS ${pass+1} DONE`,
+                    layout: currentArr.map((id, idx) => ({ id, row: 'bot', index: idx, highlight: false, activeDigitIndex: null }))
+                });
+
+                // Move cards back to top array for the next pass
+                if (pass < maxDigits - 1) {
+                    states.push({
+                        text: `Preparing for the next pass... Array becomes the new source.`,
+                        passLabel: `PREP NEXT`,
+                        layout: currentArr.map((id, idx) => ({ id, row: 'top', index: idx, highlight: false, activeDigitIndex: null }))
+                    });
+                }
+            }
+
+            // Final Sorted State
+            states.push({
+                text: "Sorting Complete! The array is fully sorted in ascending order.",
+                passLabel: 'DONE',
+                layout: currentArr.map((id, idx) => ({ id, row: 'bot', index: idx, highlight: true, highlightColor: 'green', activeDigitIndex: null }))
+            });
+        }
+
+        // ---------------------------------------------------------
+        // Render a Specific State
+        // ---------------------------------------------------------
+        function renderState(index) {
+            if (index < 0 || index >= states.length) return;
+            const state = states[index];
+            
+            // Update UI Narrative
+            narrativeText.innerHTML = state.text;
+            
+            if (state.passLabel === 'INIT') {
+                passBadge.className = 'inline-block px-4 py-1.5 bg-slate-600 text-white rounded-full font-bold uppercase tracking-wider text-sm shadow-sm whitespace-nowrap';
+            } else if (state.passLabel === 'DONE') {
+                passBadge.className = 'inline-block px-4 py-1.5 bg-green-600 text-white rounded-full font-bold uppercase tracking-wider text-sm shadow-sm whitespace-nowrap';
+            } else {
+                passBadge.className = 'inline-block px-4 py-1.5 bg-indigo-600 text-white rounded-full font-bold uppercase tracking-wider text-sm shadow-sm whitespace-nowrap';
+            }
+            passBadge.innerText = state.passLabel;
+
+            // Update Progress Bar
+            progressBar.style.width = `${(index / (states.length - 1)) * 100}%`;
+
+            // Setup Geometry relative to the container
+            const containerRect = visContainer.getBoundingClientRect();
+
+            // 1. Reset all cards base styling
+            cards.forEach(card => {
+                card.el.classList.remove('ring-4', 'ring-yellow-400', 'ring-green-400', 'scale-[1.15]');
+                card.el.style.zIndex = '10';
+                applyDigitHighlight(card, null);
+            });
+
+            // 2. Apply explicit layout defined by the state
+            state.layout.forEach(item => {
+                const slot = document.getElementById(`${item.row}-slot-${item.index}`);
+                if (!slot) return;
+                
+                const slotRect = slot.getBoundingClientRect();
+                const cardObj = cards.find(c => c.id === item.id);
+                
+                // Calculate position relative to container
+                const leftPos = slotRect.left - containerRect.left;
+                const topPos = slotRect.top - containerRect.top;
+                
+                cardObj.el.style.left = `${leftPos}px`;
+                cardObj.el.style.top = `${topPos}px`;
+                
+                if (item.highlight) {
+                    if (item.highlightColor === 'yellow') {
+                        cardObj.el.classList.add('ring-4', 'ring-yellow-400', 'scale-[1.15]');
+                    } else if (item.highlightColor === 'green') {
+                        cardObj.el.classList.add('ring-4', 'ring-green-400', 'scale-[1.15]');
+                    }
+                    cardObj.el.style.zIndex = '100'; // Bring to front while animating/highlighted
+                }
+
+                applyDigitHighlight(cardObj, item.activeDigitIndex);
+            });
+        }
+
+        // Helper to color the specific digit span inside a card
+        function applyDigitHighlight(cardObj, digitIndex) {
+            const spans = cardObj.el.querySelectorAll('.digit-span');
+            spans.forEach((span, idx) => {
+                if (idx === digitIndex) {
+                    span.classList.add('text-red-500', 'font-extrabold', 'scale-[1.3]', 'inline-block');
+                    span.classList.remove('text-slate-800');
+                } else {
+                    span.classList.remove('text-red-500', 'font-extrabold', 'scale-[1.3]', 'inline-block');
+                    span.classList.add('text-slate-800');
+                }
+            });
+        }
+
+        // ---------------------------------------------------------
+        // Controls Logic
+        // ---------------------------------------------------------
+        function setupControls() {
+            document.getElementById('btn-next').addEventListener('click', () => {
+                if (currentStateIndex < states.length - 1) {
+                    currentStateIndex++;
+                    renderState(currentStateIndex);
+                }
+                stopPlay();
+            });
+
+            document.getElementById('btn-prev').addEventListener('click', () => {
+                if (currentStateIndex > 0) {
+                    currentStateIndex--;
+                    renderState(currentStateIndex);
+                }
+                stopPlay();
+            });
+
+            document.getElementById('btn-reset').addEventListener('click', () => {
+                currentStateIndex = 0;
+                renderState(currentStateIndex);
+                stopPlay();
+            });
+
+            document.getElementById('btn-play').addEventListener('click', () => {
+                togglePlay();
+            });
+        }
+
+        function togglePlay() {
+            const playBtn = document.getElementById('btn-play');
+            if (isPlaying) {
+                stopPlay();
+            } else {
+                if (currentStateIndex >= states.length - 1) {
+                    currentStateIndex = 0; // Restart if at end
+                }
+                isPlaying = true;
+                playBtn.innerHTML = `
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                    Pause
+                `;
+                playBtn.classList.replace('bg-indigo-500', 'bg-amber-500');
+                playBtn.classList.replace('hover:bg-indigo-400', 'hover:bg-amber-400');
+                
+                playInterval = setInterval(() => {
+                    if (currentStateIndex < states.length - 1) {
+                        currentStateIndex++;
+                        renderState(currentStateIndex);
+                    } else {
+                        stopPlay();
+                    }
+                }, 1300); // 1.3 second per step
+            }
+        }
+
+        function stopPlay() {
+            if (playInterval) clearInterval(playInterval);
+            isPlaying = false;
+            const playBtn = document.getElementById('btn-play');
+            playBtn.innerHTML = `
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" /></svg>
+                Auto Play
+            `;
+            playBtn.classList.replace('bg-amber-500', 'bg-indigo-500');
+            playBtn.classList.replace('hover:bg-amber-400', 'hover:bg-indigo-400');
+        }
+
+    </script>
+</body>
+</html>

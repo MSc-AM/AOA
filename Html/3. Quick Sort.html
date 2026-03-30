@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Sort Interactive Learning</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- MathJax for Mathematical Equations -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-mono { font-family: 'Fira Code', monospace; }
+        
+        /* Array Block Transitions */
+        .array-block {
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        /* Animations */
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.5); }
+            70% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+        }
+
+        @keyframes lock-in {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1.05); }
+        }
+
+        @keyframes swap-shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Block States */
+        .block-default { background-color: white; border-color: #cbd5e1; color: #1e293b; }
+        .block-pivot { 
+            background-color: #fef08a; 
+            border-color: #eab308; 
+            color: #854d0e; 
+            border-width: 3px;
+        }
+        .block-sorted { background-color: #dcfce7; border-color: #22c55e; color: #166534; }
+        .block-comparing { border-color: #3b82f6; border-width: 3px; animation: pulse-glow 1.5s infinite; }
+        .block-stopped-p { border-color: #2563eb; background-color: #eff6ff; border-width: 4px; animation: lock-in 0.3s ease-out forwards; }
+        .block-stopped-q { border-color: #9333ea; background-color: #faf5ff; border-width: 4px; animation: lock-in 0.3s ease-out forwards; }
+        .block-swapping { animation: swap-shake 0.4s ease-in-out; border-color: #ec4899; background-color: #fdf2f8; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        .pointer-label {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-200">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-950 text-white py-10 px-4 shadow-lg">
+        <div class="max-w-6xl mx-auto text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-3 flex justify-center items-center gap-4">
+                <i data-lucide="zap" class="text-yellow-400 w-10 h-10"></i> Quick Sort Mastery
+            </h1>
+            <p class="text-lg text-blue-200 font-light max-w-2xl mx-auto">Visualize the internal mechanics of partitioning with enhanced pointer tracking.</p>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto p-4 md:p-6 space-y-8 -mt-8">
+        
+        <!-- Step-by-Step Visualizer Section -->
+        <section class="bg-white p-6 rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-8 border-b border-slate-100 pb-6">
+                <div class="flex items-center gap-3 text-slate-900 mb-4 md:mb-0">
+                    <div class="bg-blue-100 p-2 rounded-lg text-blue-700">
+                        <i data-lucide="play-circle" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold">Interactive Visualization</h2>
+                        <p class="text-sm text-slate-500">Trace every pointer movement and pivot swap</p>
+                    </div>
+                </div>
+                <!-- Controls -->
+                <div class="flex flex-wrap gap-3 justify-center">
+                    <button id="btn-reset" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold transition-all flex items-center gap-2">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Reset
+                    </button>
+                    <button id="btn-prev" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold transition-all flex items-center gap-2">
+                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Prev
+                    </button>
+                    <button id="btn-next" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-blue-200">
+                        Next <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </button>
+                    <button id="btn-play" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold transition-all flex items-center gap-2 shadow-lg shadow-emerald-200">
+                        <i data-lucide="play" class="w-4 h-4"></i> Auto Play
+                    </button>
+                </div>
+            </div>
+
+            <!-- Visualization Area -->
+            <div class="py-16 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 mb-8 overflow-x-auto min-h-[320px] flex items-center justify-center">
+                <div id="array-container" class="flex items-center justify-center gap-3 sm:gap-6 px-8 relative h-full">
+                    <!-- Array elements injected here -->
+                </div>
+            </div>
+
+            <!-- Enhanced Information Panel -->
+            <div class="grid md:grid-cols-4 gap-6">
+                <div class="md:col-span-3 bg-white border-2 border-blue-50 p-6 rounded-2xl shadow-inner relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-5">
+                        <i data-lucide="info" class="w-24 h-24"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span id="step-counter" class="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-full uppercase tracking-wider">Step 0/0</span>
+                            <h3 class="font-bold text-slate-800 text-lg">Execution Log</h3>
+                        </div>
+                        <p id="explanation-text" class="text-slate-700 text-lg leading-relaxed min-h-[3rem]">Initial state. Press 'Next' to start partitioning based on the PDF logic.</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-900 text-slate-300 p-6 rounded-2xl flex flex-col justify-center gap-4 text-sm shadow-xl">
+                    <h4 class="text-white font-bold uppercase tracking-widest text-xs mb-1 border-b border-slate-700 pb-2">Legend</h4>
+                    <div class="flex items-center gap-3">
+                        <span class="w-5 h-5 rounded bg-yellow-400 border-2 border-yellow-600 shrink-0"></span>
+                        <span class="font-medium">Pivot Element</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-5 h-5 rounded bg-blue-600 flex items-center justify-center shrink-0">
+                            <i data-lucide="chevron-down" class="w-3 h-3 text-white"></i>
+                        </div>
+                        <span class="font-medium">Pointer P (Looking for &gt; Pivot)</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-5 h-5 rounded bg-purple-600 flex items-center justify-center shrink-0">
+                            <i data-lucide="chevron-up" class="w-3 h-3 text-white"></i>
+                        </div>
+                        <span class="font-medium">Pointer Q (Looking for &le; Pivot)</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="w-5 h-5 rounded bg-green-200 border-2 border-green-500 shrink-0"></span>
+                        <span class="font-medium">Sorted Position</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- PDF Theory Summaries -->
+        <section class="grid lg:grid-cols-3 gap-8">
+            <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200">
+                <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <i data-lucide="git-merge" class="text-blue-600"></i> The Partition Rule
+                </h3>
+                <div class="space-y-4 text-slate-600 leading-relaxed">
+                    <div class="p-3 bg-blue-50 rounded-xl border-l-4 border-blue-500">
+                        <p class="text-sm">\(A[P] > Pivot \rightarrow Stop\)</p>
+                        <p class="text-xs text-blue-700 mt-1">P scans right to find values that belong in the right sub-array.</p>
+                    </div>
+                    <div class="p-3 bg-purple-50 rounded-xl border-l-4 border-purple-500">
+                        <p class="text-sm">\(A[Q] \le Pivot \rightarrow Stop\)</p>
+                        <p class="text-xs text-purple-700 mt-1">Q scans left to find values that belong in the left sub-array.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 text-white p-8 rounded-2xl shadow-lg lg:col-span-2">
+                <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <i data-lucide="clock" class="text-yellow-400"></i> Complexity Breakdown
+                </h3>
+                <div class="grid md:grid-cols-2 gap-8">
+                    <div>
+                        <h4 class="text-emerald-400 font-bold mb-2 tracking-wide">AVERAGE CASE</h4>
+                        <p class="text-3xl font-mono mb-2">O(n log n)</p>
+                        <p class="text-sm text-slate-400">Occurs when pivot splits array into equal halves. Efficiency is maximized.</p>
+                    </div>
+                    <div>
+                        <h4 class="text-red-400 font-bold mb-2 tracking-wide">WORST CASE</h4>
+                        <p class="text-3xl font-mono mb-2">O(n²)</p>
+                        <p class="text-sm text-slate-400">Occurs on already sorted arrays. Pivot splits are heavily unbalanced (0 and n-1).</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // Initialization
+        lucide.createIcons();
+
+        const INITIAL_ARRAY = [35, 50, 15, 25, 80, 20, 90, 45];
+        let steps = [];
+        let currentStepIndex = 0;
+        let playInterval = null;
+        let isPlaying = false;
+
+        const container = document.getElementById('array-container');
+        const explanation = document.getElementById('explanation-text');
+        const counter = document.getElementById('step-counter');
+        const btnNext = document.getElementById('btn-next');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnPlay = document.getElementById('btn-play');
+        const btnReset = document.getElementById('btn-reset');
+
+        /**
+         * Enhanced Simulation with detailed pointer states
+         */
+        function simulateQuickSort(original) {
+            let log = [];
+            let arr = [...original];
+            let sorted = new Set();
+
+            function addStep(config) {
+                log.push({
+                    array: [...arr],
+                    pivotIdx: config.pivotIdx ?? null,
+                    pIdx: config.pIdx ?? null,
+                    qIdx: config.qIdx ?? null,
+                    pStopped: config.pStopped ?? false,
+                    qStopped: config.qStopped ?? false,
+                    swapping: config.swapping ?? false,
+                    sorted: new Set(sorted),
+                    msg: config.msg
+                });
+            }
+
+            function partition(low, high) {
+                let pivotVal = arr[low];
+                let p = low + 1;
+                let q = high;
+
+                addStep({ pivotIdx: low, pIdx: p, qIdx: q, msg: `<strong>New Partition:</strong> Targetting subarray [${low}...${high}]. Pivot is <strong>${pivotVal}</strong>.` });
+
+                while (true) {
+                    // P movement
+                    while (p <= high) {
+                        addStep({ pivotIdx: low, pIdx: p, qIdx: q, msg: `Pointer P checking index ${p} (<strong>${arr[p]}</strong>). Is it > ${pivotVal}?` });
+                        if (arr[p] > pivotVal) {
+                            addStep({ pivotIdx: low, pIdx: p, qIdx: q, pStopped: true, msg: `<strong>P STOPPED!</strong> Found ${arr[p]} which is greater than pivot ${pivotVal}.` });
+                            break;
+                        }
+                        p++;
+                        if (p <= high) addStep({ pivotIdx: low, pIdx: p, qIdx: q, msg: `No. Moving P right...` });
+                    }
+
+                    // Q movement
+                    while (q >= low) {
+                        addStep({ pivotIdx: low, pIdx: p, qIdx: q, pStopped: p <= high && arr[p] > pivotVal, msg: `Pointer Q checking index ${q} (<strong>${arr[q]}</strong>). Is it ≤ ${pivotVal}?` });
+                        if (arr[q] <= pivotVal) {
+                            addStep({ pivotIdx: low, pIdx: p, qIdx: q, pStopped: p <= high && arr[p] > pivotVal, qStopped: true, msg: `<strong>Q STOPPED!</strong> Found ${arr[q]} which is smaller or equal to ${pivotVal}.` });
+                            break;
+                        }
+                        q--;
+                        if (q >= low) addStep({ pivotIdx: low, pIdx: p, qIdx: q, pStopped: p <= high && arr[p] > pivotVal, msg: `No. Moving Q left...` });
+                    }
+
+                    if (p < q) {
+                        addStep({ pivotIdx: low, pIdx: p, qIdx: q, pStopped: true, qStopped: true, msg: `P and Q both stopped and <strong>P < Q</strong>. Preparing to swap.` });
+                        let t = arr[p]; arr[p] = arr[q]; arr[q] = t;
+                        addStep({ pivotIdx: low, pIdx: p, qIdx: q, swapping: true, msg: `<strong>SWAPPED</strong> A[P] and A[Q]. Resuming scans.` });
+                    } else {
+                        addStep({ pivotIdx: low, pIdx: p, qIdx: q, pStopped: p > high || arr[p] > pivotVal, qStopped: true, msg: `P and Q have <strong>crossed</strong> (P ≥ Q). Partition loop terminates.` });
+                        break;
+                    }
+                }
+
+                addStep({ pivotIdx: low, qIdx: q, msg: `Final Step: Swapping Pivot (<strong>${arr[low]}</strong>) with A[Q] (<strong>${arr[q]}</strong>).` });
+                let t = arr[low]; arr[low] = arr[q]; arr[q] = t;
+                sorted.add(q);
+                addStep({ pivotIdx: q, swapping: true, msg: `<strong>Pivot Fixed!</strong> ${pivotVal} is now in its correct sorted position.` });
+
+                return q;
+            }
+
+            function solve(low, high) {
+                if (low < high) {
+                    let pi = partition(low, high);
+                    solve(low, pi - 1);
+                    solve(pi + 1, high);
+                } else if (low === high) {
+                    sorted.add(low);
+                    addStep({ msg: `Index ${low} (<strong>${arr[low]}</strong>) is a single element. Marking as sorted.` });
+                }
+            }
+
+            addStep({ msg: "Initial Array loaded. Ready to perform Quick Sort." });
+            solve(0, arr.length - 1);
+            addStep({ msg: "<strong>Sorting Complete!</strong> All elements are in their final positions." });
+            return log;
+        }
+
+        function render(index) {
+            const step = steps[index];
+            container.innerHTML = '';
+
+            step.array.forEach((val, i) => {
+                let stateClass = "block-default shadow-sm";
+                if (step.sorted.has(i)) stateClass = "block-sorted shadow-none opacity-80";
+                if (i === step.pivotIdx) stateClass = "block-pivot shadow-lg";
+                
+                // Specific pointer highlights
+                if (i === step.pIdx) {
+                    stateClass += step.pStopped ? " block-stopped-p" : " block-comparing";
+                }
+                if (i === step.qIdx) {
+                    stateClass += step.qStopped ? " block-stopped-q" : " block-comparing";
+                }
+                if (step.swapping && (i === step.pIdx || i === step.qIdx || i === step.pivotIdx)) {
+                    stateClass += " block-swapping";
+                }
+
+                // Pointer UI
+                const pPointer = i === step.pIdx ? `
+                    <div class="pointer-label absolute -top-12 flex flex-col items-center">
+                        <div class="px-2 py-1 ${step.pStopped ? 'bg-blue-600' : 'bg-blue-400'} text-white text-[10px] font-bold rounded shadow-md">
+                            ${step.pStopped ? 'P: LOCKED' : 'P MOVING'}
+                        </div>
+                        <div class="w-0.5 h-4 bg-blue-500"></div>
+                    </div>` : '';
+
+                const qPointer = i === step.qIdx ? `
+                    <div class="pointer-label absolute -bottom-12 flex flex-col items-center">
+                        <div class="w-0.5 h-4 bg-purple-500"></div>
+                        <div class="px-2 py-1 ${step.qStopped ? 'bg-purple-600' : 'bg-purple-400'} text-white text-[10px] font-bold rounded shadow-md">
+                            ${step.qStopped ? 'Q: LOCKED' : 'Q MOVING'}
+                        </div>
+                    </div>` : '';
+
+                container.innerHTML += `
+                    <div class="relative flex flex-col items-center w-12 md:w-16 shrink-0 transition-all">
+                        ${pPointer}
+                        <div class="array-block w-12 h-12 md:w-16 md:h-16 flex items-center justify-center text-lg md:text-xl font-bold rounded-xl border-2 ${stateClass}">
+                            ${val}
+                        </div>
+                        <div class="mt-2 text-[10px] font-mono text-slate-400">#${i}</div>
+                        ${qPointer}
+                    </div>
+                `;
+            });
+
+            explanation.innerHTML = step.msg;
+            counter.innerText = `Step ${index} / ${steps.length - 1}`;
+            
+            btnNext.disabled = index === steps.length - 1;
+            btnPrev.disabled = index === 0;
+            [btnNext, btnPrev].forEach(b => b.classList.toggle('opacity-30', b.disabled));
+
+            if(window.MathJax) MathJax.typeset();
+        }
+
+        // Event Handling
+        btnNext.onclick = () => { if(currentStepIndex < steps.length-1) render(++currentStepIndex); };
+        btnPrev.onclick = () => { if(currentStepIndex > 0) render(--currentStepIndex); };
+        btnReset.onclick = () => { stopAuto(); currentStepIndex = 0; render(0); };
+        
+        btnPlay.onclick = () => {
+            if(isPlaying) stopAuto();
+            else startAuto();
+        };
+
+        function startAuto() {
+            isPlaying = true;
+            btnPlay.innerHTML = `<i data-lucide="pause" class="w-4 h-4"></i> Stop`;
+            playInterval = setInterval(() => {
+                if(currentStepIndex < steps.length - 1) render(++currentStepIndex);
+                else stopAuto();
+            }, 800);
+            lucide.createIcons();
+        }
+
+        function stopAuto() {
+            isPlaying = false;
+            clearInterval(playInterval);
+            btnPlay.innerHTML = `<i data-lucide="play" class="w-4 h-4"></i> Auto Play`;
+            lucide.createIcons();
+        }
+
+        // Bootstrap
+        steps = simulateQuickSort(INITIAL_ARRAY);
+        render(0);
+    </script>
+</body>
+</html>

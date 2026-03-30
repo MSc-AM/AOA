@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MST Algorithms Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        canvas {
+            cursor: crosshair;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { height: 6px; width: 6px; }
+        ::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        .toast-enter { animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .toast-exit { animation: slideOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+
+        .shake { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+            40%, 60% { transform: translate3d(4px, 0, 0); }
+        }
+
+        .tab-active { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .tab-inactive { background-color: transparent; color: #94a3b8; }
+        .tab-inactive:hover { color: #f8fafc; background-color: #334155; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center z-10 shadow-md">
+        <div>
+            <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">MST Algorithms Challenge</h1>
+            <p class="text-slate-400 text-sm mt-1">Select valid edges to construct the Minimum Spanning Tree.</p>
+        </div>
+        
+        <!-- Algorithm Navigation -->
+        <div class="flex bg-slate-800 p-1 rounded-lg border border-slate-700 mx-4">
+            <button onclick="setAlgorithm('prim')" id="btn-prim" class="px-6 py-2 rounded-md font-semibold text-sm transition-all tab-active">
+                Prim's Algorithm
+            </button>
+            <button onclick="setAlgorithm('kruskal')" id="btn-kruskal" class="px-6 py-2 rounded-md font-semibold text-sm transition-all tab-inactive">
+                Kruskal's Algorithm
+            </button>
+        </div>
+
+        <div class="flex gap-4 items-center">
+            <select id="level-selector" onchange="changeLevel()" class="bg-slate-900 border border-slate-700 text-emerald-400 font-semibold px-4 py-2 rounded-lg cursor-pointer hover:bg-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <option value="0">Pattern 1: The Diamond Core</option>
+                <option value="1">Pattern 2: The Hourglass</option>
+                <option value="2">Pattern 3: The Labyrinth</option>
+                <option value="3">Pattern 4: The Twin Islands</option>
+                <option value="4">Pattern 5: The Double Helix</option>
+                <option value="5">Pattern 6: The Tesseract</option>
+                <option value="6">Pattern 7: The Royal Crown</option>
+                <option value="7">Pattern 8: Stellar Snowflake</option>
+                <option value="8">Pattern 9: The Starfighter</option>
+                <option value="9">Pattern 10: Spider's Web</option>
+            </select>
+            <div class="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 flex flex-col items-center justify-center">
+                <span class="text-slate-400 text-xs font-semibold uppercase">Total Cost</span>
+                <span id="cost-display" class="text-emerald-400 font-bold code-font text-lg leading-none mt-1">0</span>
+            </div>
+            <div class="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 flex flex-col items-center justify-center">
+                <span class="text-slate-400 text-xs font-semibold uppercase">Mistakes</span>
+                <span id="mistakes-display" class="text-rose-400 font-bold code-font text-lg leading-none mt-1">0</span>
+            </div>
+            <button onclick="resetGame()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-3 rounded-lg font-semibold transition-colors duration-200 shadow-lg shadow-indigo-900/50 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                Restart
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Canvas Container -->
+        <div class="flex-1 relative" id="canvas-container">
+            <canvas id="mainCanvas"></canvas>
+            
+            <!-- Win Overlay -->
+            <div id="win-overlay" class="absolute inset-0 bg-slate-900/90 backdrop-blur-sm hidden flex-col items-center justify-center z-20">
+                <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 shadow-2xl text-center max-w-md">
+                    <div class="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <svg class="w-10 h-10 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <h2 class="text-3xl font-bold text-white mb-2" id="win-title">Algorithm Complete!</h2>
+                    <p class="text-slate-300 mb-6">You successfully built the Minimum Spanning Tree.</p>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-700">
+                            <div class="text-slate-400 text-sm mb-1">Final Cost</div>
+                            <div class="text-emerald-400 text-2xl font-bold code-font" id="final-cost">0</div>
+                        </div>
+                        <div class="bg-slate-900 p-4 rounded-xl border border-slate-700">
+                            <div class="text-slate-400 text-sm mb-1">Mistakes</div>
+                            <div class="text-rose-400 text-2xl font-bold code-font" id="final-mistakes">0</div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="resetGame()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-lg font-bold transition-colors">
+                        Try Another Graph
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar Panel -->
+        <div class="w-96 bg-slate-900 border-l border-slate-800 flex flex-col z-10 shadow-2xl overflow-y-auto">
+            
+            <!-- Theory Section -->
+            <div class="p-5 border-b border-slate-800 bg-slate-800/50">
+                <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                    Theory: <span id="theory-title">Prim's</span>
+                </h3>
+                <div id="theory-content" class="text-sm text-slate-300 space-y-3 leading-relaxed">
+                    <!-- Injected via JS -->
+                </div>
+            </div>
+
+            <!-- Rules Section -->
+            <div class="p-5 border-b border-slate-800">
+                <h3 class="text-lg font-bold text-white mb-3 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Rules
+                </h3>
+                <ul id="rules-content" class="text-sm text-slate-300 space-y-2">
+                    <!-- Injected via JS -->
+                </ul>
+            </div>
+
+            <!-- Visited/Connected Nodes -->
+            <div class="p-5 border-b border-slate-800">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">
+                    <span id="nodes-panel-title">Visited Nodes</span> (<span id="visited-count">1</span>/<span id="total-nodes-count">12</span>)
+                </h3>
+                <div id="visited-nodes-container" class="flex flex-wrap gap-2">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- Action Log -->
+            <div class="flex-1 flex flex-col p-0 min-h-[200px]">
+                <div class="p-5 pb-2">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider">Action Log</h3>
+                </div>
+                <div id="action-log" class="flex-1 overflow-y-auto px-5 pb-5 space-y-3 code-font text-xs">
+                    <!-- Logs populated via JS -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="fixed bottom-6 right-6 flex flex-col gap-2 z-50"></div>
+
+    <script>
+        // --- Core Engine State ---
+        const canvas = document.getElementById('mainCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+
+        let currentAlgorithm = 'prim';
+        
+        let width, height;
+        let scale = 1;
+        const LOGICAL_WIDTH = 800;
+        const LOGICAL_HEIGHT = 600;
+
+        let totalCost = 0;
+        let mistakes = 0;
+        let START_NODE = '';
+
+        // --- Graph Data State ---
+        const levels = [
+            {
+                name: "Pattern 1: The Diamond Core", start: "I",
+                nodes: [ {id:'A',x:400,y:100}, {id:'B',x:600,y:300}, {id:'C',x:400,y:500}, {id:'D',x:200,y:300}, {id:'E',x:400,y:200}, {id:'F',x:500,y:300}, {id:'G',x:400,y:400}, {id:'H',x:300,y:300}, {id:'I',x:400,y:300} ],
+                edges: [ {u:'A',v:'B',weight:6}, {u:'B',v:'C',weight:7}, {u:'C',v:'D',weight:6}, {u:'D',v:'A',weight:8}, {u:'E',v:'F',weight:3}, {u:'F',v:'G',weight:2}, {u:'G',v:'H',weight:4}, {u:'H',v:'E',weight:5}, {u:'A',v:'E',weight:4}, {u:'B',v:'F',weight:5}, {u:'C',v:'G',weight:2}, {u:'D',v:'H',weight:3}, {u:'E',v:'I',weight:5}, {u:'F',v:'I',weight:7}, {u:'G',v:'I',weight:3}, {u:'H',v:'I',weight:6}, {u:'A',v:'I',weight:9}, {u:'C',v:'I',weight:8} ]
+            },
+            {
+                name: "Pattern 2: The Hourglass", start: "F",
+                nodes: [ {id:'A',x:200,y:100}, {id:'B',x:400,y:100}, {id:'C',x:600,y:100}, {id:'D',x:300,y:200}, {id:'E',x:500,y:200}, {id:'F',x:400,y:300}, {id:'G',x:300,y:400}, {id:'H',x:500,y:400}, {id:'I',x:200,y:500}, {id:'J',x:400,y:500}, {id:'K',x:600,y:500} ],
+                edges: [ {u:'A',v:'B',weight:4}, {u:'B',v:'C',weight:3}, {u:'I',v:'J',weight:5}, {u:'J',v:'K',weight:2}, {u:'A',v:'D',weight:6}, {u:'B',v:'D',weight:7}, {u:'B',v:'E',weight:4}, {u:'C',v:'E',weight:5}, {u:'D',v:'F',weight:3}, {u:'E',v:'F',weight:6}, {u:'F',v:'G',weight:2}, {u:'F',v:'H',weight:4}, {u:'G',v:'I',weight:5}, {u:'G',v:'J',weight:3}, {u:'H',v:'J',weight:7}, {u:'H',v:'K',weight:6}, {u:'D',v:'E',weight:8}, {u:'G',v:'H',weight:9}, {u:'A',v:'F',weight:9}, {u:'K',v:'F',weight:8} ]
+            },
+            {
+                name: "Pattern 3: The Labyrinth", start: "A",
+                nodes: [ {id:'A',x:150,y:150}, {id:'B',x:650,y:150}, {id:'C',x:650,y:450}, {id:'D',x:150,y:450}, {id:'E',x:250,y:250}, {id:'F',x:550,y:250}, {id:'G',x:550,y:350}, {id:'H',x:250,y:350}, {id:'I',x:350,y:300}, {id:'J',x:450,y:300} ],
+                edges: [ {u:'A',v:'B',weight:5}, {u:'B',v:'C',weight:4}, {u:'C',v:'D',weight:7}, {u:'D',v:'E',weight:3}, {u:'E',v:'F',weight:6}, {u:'F',v:'G',weight:2}, {u:'G',v:'H',weight:8}, {u:'H',v:'I',weight:4}, {u:'I',v:'J',weight:3}, {u:'A',v:'D',weight:9}, {u:'B',v:'E',weight:8}, {u:'C',v:'F',weight:5}, {u:'D',v:'H',weight:6}, {u:'E',v:'I',weight:7}, {u:'F',v:'J',weight:4}, {u:'G',v:'J',weight:5} ]
+            },
+            {
+                name: "Pattern 4: The Twin Islands", start: "A",
+                nodes: [ {id:'A',x:100,y:250}, {id:'B',x:200,y:150}, {id:'C',x:200,y:350}, {id:'D',x:300,y:250}, {id:'E',x:700,y:250}, {id:'F',x:600,y:150}, {id:'G',x:600,y:350}, {id:'H',x:500,y:250}, {id:'I',x:350,y:200}, {id:'J',x:450,y:200}, {id:'K',x:350,y:300}, {id:'L',x:450,y:300} ],
+                edges: [ {u:'A',v:'B',weight:4}, {u:'B',v:'D',weight:3}, {u:'D',v:'C',weight:5}, {u:'C',v:'A',weight:2}, {u:'A',v:'D',weight:7}, {u:'E',v:'F',weight:3}, {u:'F',v:'H',weight:2}, {u:'H',v:'G',weight:4}, {u:'G',v:'E',weight:6}, {u:'E',v:'H',weight:5}, {u:'B',v:'I',weight:6}, {u:'C',v:'K',weight:5}, {u:'F',v:'J',weight:4}, {u:'G',v:'L',weight:7}, {u:'I',v:'J',weight:8}, {u:'K',v:'L',weight:9}, {u:'I',v:'K',weight:2}, {u:'J',v:'L',weight:3}, {u:'D',v:'I',weight:8}, {u:'H',v:'J',weight:7} ]
+            },
+            {
+                name: "Pattern 5: The Double Helix", start: "E",
+                nodes: [ {id:'A',x:150,y:200}, {id:'B',x:150,y:400}, {id:'C',x:300,y:250}, {id:'D',x:300,y:350}, {id:'E',x:450,y:350}, {id:'F',x:450,y:250}, {id:'G',x:650,y:200}, {id:'H',x:650,y:400}, {id:'I',x:400,y:150}, {id:'J',x:400,y:450} ],
+                edges: [ {u:'A',v:'C',weight:4}, {u:'C',v:'F',weight:6}, {u:'F',v:'G',weight:3}, {u:'B',v:'D',weight:5}, {u:'D',v:'E',weight:4}, {u:'E',v:'H',weight:2}, {u:'A',v:'I',weight:7}, {u:'I',v:'G',weight:8}, {u:'B',v:'J',weight:6}, {u:'J',v:'H',weight:5}, {u:'C',v:'D',weight:2}, {u:'F',v:'E',weight:3}, {u:'I',v:'J',weight:9}, {u:'A',v:'B',weight:8}, {u:'G',v:'H',weight:7}, {u:'C',v:'I',weight:4}, {u:'E',v:'J',weight:5} ]
+            },
+            {
+                name: "Pattern 6: The Tesseract", start: "A",
+                nodes: [ {id:'A',x:250,y:200}, {id:'B',x:450,y:200}, {id:'C',x:450,y:400}, {id:'D',x:250,y:400}, {id:'E',x:350,y:150}, {id:'F',x:550,y:150}, {id:'G',x:550,y:350}, {id:'H',x:350,y:350} ],
+                edges: [ {u:'A',v:'B',weight:5}, {u:'B',v:'C',weight:4}, {u:'C',v:'D',weight:3}, {u:'D',v:'A',weight:6}, {u:'E',v:'F',weight:2}, {u:'F',v:'G',weight:5}, {u:'G',v:'H',weight:7}, {u:'H',v:'E',weight:4}, {u:'A',v:'E',weight:3}, {u:'B',v:'F',weight:6}, {u:'C',v:'G',weight:2}, {u:'D',v:'H',weight:5}, {u:'A',v:'C',weight:8}, {u:'B',v:'D',weight:9}, {u:'E',v:'G',weight:8}, {u:'F',v:'H',weight:9}, {u:'A',v:'F',weight:7}, {u:'B',v:'G',weight:8} ]
+            },
+            {
+                name: "Pattern 7: The Royal Crown", start: "H",
+                nodes: [ {id:'A',x:150,y:150}, {id:'B',x:400,y:100}, {id:'C',x:650,y:150}, {id:'D',x:275,y:250}, {id:'E',x:525,y:250}, {id:'F',x:150,y:400}, {id:'G',x:275,y:400}, {id:'H',x:400,y:400}, {id:'I',x:525,y:400}, {id:'J',x:650,y:400} ],
+                edges: [ {u:'A',v:'D',weight:4}, {u:'B',v:'D',weight:6}, {u:'B',v:'E',weight:5}, {u:'C',v:'E',weight:3}, {u:'D',v:'G',weight:2}, {u:'E',v:'I',weight:4}, {u:'F',v:'G',weight:5}, {u:'G',v:'H',weight:3}, {u:'H',v:'I',weight:2}, {u:'I',v:'J',weight:6}, {u:'A',v:'F',weight:7}, {u:'C',v:'J',weight:8}, {u:'F',v:'D',weight:5}, {u:'J',v:'E',weight:7}, {u:'D',v:'E',weight:9}, {u:'A',v:'B',weight:8} ]
+            },
+            {
+                name: "Pattern 8: Stellar Snowflake", start: "A",
+                nodes: [ {id:'A',x:400,y:300}, {id:'B',x:400,y:180}, {id:'C',x:514,y:263}, {id:'D',x:470,y:388}, {id:'E',x:330,y:388}, {id:'F',x:286,y:263}, {id:'G',x:400,y:60}, {id:'H',x:628,y:225}, {id:'I',x:540,y:476}, {id:'J',x:260,y:476}, {id:'K',x:172,y:225} ],
+                edges: [ {u:'A',v:'B',weight:4}, {u:'A',v:'C',weight:3}, {u:'A',v:'D',weight:5}, {u:'A',v:'E',weight:2}, {u:'A',v:'F',weight:6}, {u:'B',v:'C',weight:7}, {u:'C',v:'D',weight:4}, {u:'D',v:'E',weight:8}, {u:'E',v:'F',weight:3}, {u:'F',v:'B',weight:5}, {u:'B',v:'G',weight:2}, {u:'C',v:'H',weight:6}, {u:'D',v:'I',weight:4}, {u:'E',v:'J',weight:3}, {u:'F',v:'K',weight:5}, {u:'G',v:'C',weight:8}, {u:'H',v:'D',weight:7}, {u:'I',v:'E',weight:6}, {u:'J',v:'F',weight:9}, {u:'K',v:'B',weight:8} ]
+            },
+            {
+                name: "Pattern 9: The Starfighter", start: "K",
+                nodes: [ {id:'A',x:400,y:100}, {id:'B',x:400,y:200}, {id:'C',x:250,y:300}, {id:'D',x:550,y:300}, {id:'E',x:150,y:450}, {id:'F',x:650,y:450}, {id:'G',x:350,y:400}, {id:'H',x:450,y:400}, {id:'I',x:350,y:500}, {id:'J',x:450,y:500}, {id:'K',x:400,y:300}, {id:'L',x:400,y:400} ],
+                edges: [ {u:'A',v:'B',weight:3}, {u:'B',v:'K',weight:2}, {u:'K',v:'L',weight:4}, {u:'C',v:'B',weight:5}, {u:'D',v:'B',weight:6}, {u:'E',v:'C',weight:4}, {u:'F',v:'D',weight:3}, {u:'C',v:'G',weight:2}, {u:'D',v:'H',weight:5}, {u:'E',v:'G',weight:7}, {u:'F',v:'H',weight:6}, {u:'G',v:'I',weight:4}, {u:'H',v:'J',weight:3}, {u:'I',v:'L',weight:8}, {u:'J',v:'L',weight:7}, {u:'G',v:'K',weight:5}, {u:'H',v:'K',weight:4}, {u:'I',v:'J',weight:9}, {u:'A',v:'C',weight:8}, {u:'A',v:'D',weight:9} ]
+            },
+            {
+                name: "Pattern 10: Spider's Web", start: "A",
+                nodes: [ {id:'A',x:400,y:300}, {id:'B',x:400,y:180}, {id:'C',x:504,y:360}, {id:'D',x:296,y:360}, {id:'E',x:400,y:60}, {id:'F',x:608,y:180}, {id:'G',x:608,y:420}, {id:'H',x:400,y:540}, {id:'I',x:192,y:420}, {id:'J',x:192,y:180} ],
+                edges: [ {u:'A',v:'B',weight:3}, {u:'A',v:'C',weight:5}, {u:'A',v:'D',weight:4}, {u:'B',v:'C',weight:6}, {u:'C',v:'D',weight:2}, {u:'D',v:'B',weight:7}, {u:'E',v:'F',weight:5}, {u:'F',v:'G',weight:3}, {u:'G',v:'H',weight:4}, {u:'H',v:'I',weight:6}, {u:'I',v:'J',weight:2}, {u:'J',v:'E',weight:8}, {u:'B',v:'E',weight:4}, {u:'B',v:'F',weight:5}, {u:'C',v:'G',weight:3}, {u:'C',v:'H',weight:7}, {u:'D',v:'I',weight:4}, {u:'D',v:'J',weight:6}, {u:'E',v:'I',weight:9}, {u:'G',v:'E',weight:8} ]
+            }
+        ];
+        
+        let currentLevelIndex = 0;
+        let gNodes = [], gEdges = [], visitedNodes = new Set(), mstEdges = new Set(), parentMap = {};
+        let hoveredEdge = null, errorEdge = null, errorTimeout = null;
+
+        const COLORS = {
+            nodeDefault: '#1e293b', nodeVisited: '#4f46e5', nodeBorder: '#475569', nodeText: '#f8fafc',
+            edgeDefault: '#334155', edgeHover: '#94a3b8', edgeMST: '#10b981', edgeError: '#e11d48',
+            weightBg: '#0f172a', weightText: '#94a3b8', weightTextMST: '#34d399', weightTextError: '#f43f5e'
+        };
+
+        const THEORY = {
+            prim: {
+                title: "Prim's Algorithm",
+                content: `
+                    <p><strong>What is it?</strong> A greedy algorithm that finds a minimum spanning tree for a weighted undirected graph.</p>
+                    <p><strong>How it works:</strong> Starts from an arbitrary root node. At each step, it looks at all edges connecting a visited node to an unvisited node (the "frontier"), and safely adds the edge with the absolute lowest weight to the MST.</p>
+                    <p><strong>When to use:</strong> Highly effective for dense graphs (many edges). Typically implemented using a Priority Queue.</p>
+                `
+            },
+            kruskal: {
+                title: "Kruskal's Algorithm",
+                content: `
+                    <p><strong>What is it?</strong> A greedy algorithm that finds a minimum spanning tree by treating every node as an individual tree and merging them together into a single forest.</p>
+                    <p><strong>How it works:</strong> Sorts all edges in the graph by weight. It iterates through the sorted edges and adds the lowest weight edge to the MST, <em>provided that adding it does not form a cycle</em>. It uses a Disjoint Set (Union-Find) to check for cycles.</p>
+                    <p><strong>When to use:</strong> Extremely efficient for sparse graphs (fewer edges). Edges are sorted first, making it robust.</p>
+                `
+            }
+        };
+
+        // --- Initialization ---
+        function init() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('click', handleMouseClick);
+            
+            setAlgorithm('prim');
+        }
+
+        function setAlgorithm(algo) {
+            currentAlgorithm = algo;
+            
+            // Update Buttons
+            document.getElementById('btn-prim').className = `px-6 py-2 rounded-md font-semibold text-sm transition-all ${algo === 'prim' ? 'tab-active' : 'tab-inactive'}`;
+            document.getElementById('btn-kruskal').className = `px-6 py-2 rounded-md font-semibold text-sm transition-all ${algo === 'kruskal' ? 'tab-active' : 'tab-inactive'}`;
+            
+            // Update UI Theory
+            document.getElementById('theory-title').innerHTML = THEORY[algo].title;
+            document.getElementById('theory-content').innerHTML = THEORY[algo].content;
+
+            const rulesContainer = document.getElementById('rules-content');
+            if (algo === 'prim') {
+                document.getElementById('nodes-panel-title').innerText = "Visited Nodes";
+                rulesContainer.innerHTML = `
+                    <li class="flex items-start gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-500 mt-1.5 flex-shrink-0"></div>
+                        <span>Start at the pre-selected node <strong id="instruction-start-node" class="text-indigo-400"></strong>.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-500 mt-1.5 flex-shrink-0"></div>
+                        <span>Click an edge that connects a <strong class="text-emerald-400">visited</strong> node to an <strong class="text-slate-100">unvisited</strong> node.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-500 mt-1.5 flex-shrink-0"></div>
+                        <span>You <strong>must</strong> select the edge with the <strong>minimum weight</strong> available in the frontier.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 flex-shrink-0"></div>
+                        <span>Watch out for ties and potential cycles!</span>
+                    </li>
+                `;
+            } else {
+                document.getElementById('nodes-panel-title').innerText = "Connected Nodes";
+                rulesContainer.innerHTML = `
+                    <li class="flex items-start gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-500 mt-1.5 flex-shrink-0"></div>
+                        <span>Review <strong>all</strong> available edges across the entire graph.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-500 mt-1.5 flex-shrink-0"></div>
+                        <span>Select the absolute <strong>minimum weight</strong> edge remaining in the graph.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-slate-500 mt-1.5 flex-shrink-0"></div>
+                        <span>If an edge forms a <strong class="text-rose-400">cycle</strong>, it is invalid. Skip it and find the next lowest.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 flex-shrink-0"></div>
+                        <span>You do NOT need to connect to an already visited node. Build the forest!</span>
+                    </li>
+                `;
+            }
+
+            resetGame();
+        }
+
+        function changeLevel() {
+            currentLevelIndex = parseInt(document.getElementById('level-selector').value);
+            resetGame();
+        }
+
+        function resetGame() {
+            const level = levels[currentLevelIndex];
+            START_NODE = level.start;
+            
+            document.getElementById('total-nodes-count').innerText = level.nodes.length;
+            
+            if (currentAlgorithm === 'prim') {
+                const startNodeEl = document.getElementById('instruction-start-node');
+                if(startNodeEl) startNodeEl.innerText = START_NODE;
+            }
+            
+            visitedNodes.clear();
+            mstEdges.clear();
+            totalCost = 0;
+            mistakes = 0;
+            hoveredEdge = null;
+            errorEdge = null;
+            
+            gNodes = level.nodes.map(n => ({ ...n }));
+            gEdges = level.edges.map(e => ({ ...e, id: `${e.u}-${e.v}` }));
+
+            if (currentAlgorithm === 'prim') {
+                visitedNodes.add(START_NODE);
+            } else {
+                parentMap = {};
+                gNodes.forEach(n => parentMap[n.id] = n.id);
+            }
+
+            document.getElementById('action-log').innerHTML = '';
+            document.getElementById('win-overlay').classList.add('hidden');
+            document.getElementById('win-overlay').classList.remove('flex');
+            
+            if(currentAlgorithm === 'prim') {
+                logAction(`Loaded ${level.name} (Prim's). Node ${START_NODE} selected automatically.`, 'info');
+            } else {
+                logAction(`Loaded ${level.name} (Kruskal's). Pick the global minimum edge.`, 'info');
+            }
+            
+            updateUI();
+            requestAnimationFrame(draw);
+        }
+
+        // --- Kruskal's Union-Find Logic ---
+        function findSet(i) {
+            if (parentMap[i] === i) return i;
+            return parentMap[i] = findSet(parentMap[i]);
+        }
+
+        function unionSets(i, j) {
+            let rootI = findSet(i);
+            let rootJ = findSet(j);
+            if (rootI !== rootJ) {
+                parentMap[rootI] = rootJ;
+            }
+        }
+
+        // --- Validations ---
+        function validatePrimEdge(edge) {
+            if (mstEdges.has(edge.id)) return { valid: false, msg: "Edge is already in the MST." };
+
+            const uVis = visitedNodes.has(edge.u);
+            const vVis = visitedNodes.has(edge.v);
+
+            if (uVis && vVis) return { valid: false, msg: "Cycle detected! Both nodes are already visited." };
+            if (!uVis && !vVis) return { valid: false, msg: "Edge is entirely disconnected from the current tree." };
+
+            const frontier = gEdges.filter(e => {
+                const uV = visitedNodes.has(e.u);
+                const vV = visitedNodes.has(e.v);
+                return (uV && !vV) || (!uV && vV);
+            });
+            const minWeight = Math.min(...frontier.map(e => e.weight));
+
+            if (edge.weight > minWeight) {
+                return { valid: false, msg: `Incorrect! There is a cheaper edge available in the frontier (Weight: ${minWeight}).` };
+            }
+            return { valid: true, msg: "Valid edge selected." };
+        }
+
+        function validateKruskalEdge(edge) {
+            if (mstEdges.has(edge.id)) return { valid: false, msg: "Edge is already in the MST." };
+            if (findSet(edge.u) === findSet(edge.v)) return { valid: false, msg: "Cycle detected! These nodes are already connected." };
+
+            // Find global minimum of VALID remaining edges
+            let minAvailable = Infinity;
+            gEdges.forEach(e => {
+                if (!mstEdges.has(e.id) && findSet(e.u) !== findSet(e.v)) {
+                    minAvailable = Math.min(minAvailable, e.weight);
+                }
+            });
+
+            if (edge.weight > minAvailable) {
+                return { valid: false, msg: `Not the minimum valid edge! Minimum available weight is ${minAvailable}.` };
+            }
+
+            return { valid: true, msg: "Valid edge selected." };
+        }
+
+        // --- Interaction ---
+        function resizeCanvas() {
+            const rect = container.getBoundingClientRect();
+            width = rect.width;
+            height = rect.height;
+            canvas.width = width * window.devicePixelRatio;
+            canvas.height = height * window.devicePixelRatio;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            scale = Math.min(width / LOGICAL_WIDTH, height / LOGICAL_HEIGHT) * 0.9;
+            requestAnimationFrame(draw);
+        }
+
+        function getMousePos(e) {
+            const rect = canvas.getBoundingClientRect();
+            return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        }
+
+        function handleMouseMove(e) {
+            const mousePos = getMousePos(e);
+            let closestEdge = null;
+            let minDist = 15;
+
+            const offsetX = (width - LOGICAL_WIDTH * scale) / 2;
+            const offsetY = (height - LOGICAL_HEIGHT * scale) / 2;
+            const transform = p => ({ x: p.x * scale + offsetX, y: p.y * scale + offsetY });
+
+            gEdges.forEach(edge => {
+                const nodeU = gNodes.find(n => n.id === edge.u);
+                const nodeV = gNodes.find(n => n.id === edge.v);
+                const p1 = transform(nodeU);
+                const p2 = transform(nodeV);
+                
+                let l2 = Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2);
+                let dist = 1000;
+                if (l2 !== 0) {
+                    let t = ((mousePos.x - p1.x) * (p2.x - p1.x) + (mousePos.y - p1.y) * (p2.y - p1.y)) / l2;
+                    t = Math.max(0, Math.min(1, t));
+                    dist = Math.sqrt(Math.pow(mousePos.x - (p1.x + t * (p2.x - p1.x)), 2) + Math.pow(mousePos.y - (p1.y + t * (p2.y - p1.y)), 2));
+                }
+                
+                if (dist < minDist) {
+                    minDist = dist;
+                    closestEdge = edge;
+                }
+            });
+
+            if (hoveredEdge !== closestEdge) {
+                hoveredEdge = closestEdge;
+                canvas.style.cursor = hoveredEdge ? 'pointer' : 'crosshair';
+                requestAnimationFrame(draw);
+            }
+        }
+
+        function handleMouseClick(e) {
+            if (!hoveredEdge || mstEdges.size === gNodes.length - 1) return;
+
+            const validation = currentAlgorithm === 'prim' ? validatePrimEdge(hoveredEdge) : validateKruskalEdge(hoveredEdge);
+
+            if (validation.valid) {
+                mstEdges.add(hoveredEdge.id);
+                visitedNodes.add(hoveredEdge.u);
+                visitedNodes.add(hoveredEdge.v);
+                totalCost += hoveredEdge.weight;
+                
+                if (currentAlgorithm === 'kruskal') {
+                    unionSets(hoveredEdge.u, hoveredEdge.v);
+                }
+                
+                logAction(`Added edge (${hoveredEdge.u}-${hoveredEdge.v}) with weight ${hoveredEdge.weight}.`, 'success');
+                showToast(`Correct! Added ${hoveredEdge.u}-${hoveredEdge.v}`, 'success');
+                
+                checkWinCondition();
+            } else {
+                mistakes++;
+                errorEdge = hoveredEdge;
+                
+                logAction(`Failed to add (${hoveredEdge.u}-${hoveredEdge.v}): ${validation.msg}`, 'error');
+                showToast(validation.msg, 'error');
+                
+                canvas.classList.add('shake');
+                setTimeout(() => canvas.classList.remove('shake'), 400);
+
+                if (errorTimeout) clearTimeout(errorTimeout);
+                errorTimeout = setTimeout(() => {
+                    errorEdge = null;
+                    requestAnimationFrame(draw);
+                }, 1000);
+            }
+
+            updateUI();
+            requestAnimationFrame(draw);
+        }
+
+        function checkWinCondition() {
+            if (mstEdges.size === gNodes.length - 1) {
+                setTimeout(() => {
+                    document.getElementById('final-cost').innerText = totalCost;
+                    document.getElementById('final-mistakes').innerText = mistakes;
+                    document.getElementById('win-title').innerText = `${currentAlgorithm === 'prim' ? "Prim's" : "Kruskal's"} Complete!`;
+                    const overlay = document.getElementById('win-overlay');
+                    overlay.classList.remove('hidden');
+                    overlay.classList.add('flex');
+                    logAction(`MST Built! Final Cost: ${totalCost}`, 'info');
+                }, 500);
+            }
+        }
+
+        // --- Drawing ---
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            const offsetX = (width - LOGICAL_WIDTH * scale) / 2;
+            const offsetY = (height - LOGICAL_HEIGHT * scale) / 2;
+            const transform = p => ({ x: p.x * scale + offsetX, y: p.y * scale + offsetY });
+
+            // 1. Draw Edges
+            gEdges.forEach(edge => {
+                const isMST = mstEdges.has(edge.id);
+                const isHovered = hoveredEdge && hoveredEdge.id === edge.id;
+                const isError = errorEdge && errorEdge.id === edge.id;
+
+                const nodeU = gNodes.find(n => n.id === edge.u);
+                const nodeV = gNodes.find(n => n.id === edge.v);
+                const p1 = transform(nodeU);
+                const p2 = transform(nodeV);
+
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+
+                if (isError) {
+                    ctx.strokeStyle = COLORS.edgeError;
+                    ctx.lineWidth = 4 * scale;
+                } else if (isMST) {
+                    ctx.strokeStyle = COLORS.edgeMST;
+                    ctx.lineWidth = 4 * scale;
+                } else if (isHovered) {
+                    ctx.strokeStyle = COLORS.edgeHover;
+                    ctx.lineWidth = 3 * scale;
+                } else {
+                    ctx.strokeStyle = COLORS.edgeDefault;
+                    ctx.lineWidth = 2 * scale;
+                }
+                
+                ctx.stroke();
+
+                // Draw Weight
+                const midX = (p1.x + p2.x) / 2;
+                const midY = (p1.y + p2.y) / 2;
+                
+                ctx.fillStyle = COLORS.weightBg;
+                ctx.beginPath();
+                ctx.arc(midX, midY, 12 * scale, 0, Math.PI * 2);
+                ctx.fill();
+
+                if (isError) ctx.fillStyle = COLORS.weightTextError;
+                else if (isMST) ctx.fillStyle = COLORS.weightTextMST;
+                else ctx.fillStyle = isHovered ? '#fff' : COLORS.weightText;
+                
+                ctx.font = `bold ${14 * scale}px 'JetBrains Mono'`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(edge.weight, midX, midY);
+            });
+
+            // 2. Draw Nodes
+            gNodes.forEach(node => {
+                const p = transform(node);
+                const isVisited = visitedNodes.has(node.id);
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 20 * scale, 0, Math.PI * 2);
+                ctx.fillStyle = isVisited ? COLORS.nodeVisited : COLORS.nodeDefault;
+                ctx.fill();
+                
+                ctx.lineWidth = 2 * scale;
+                if (currentAlgorithm === 'prim' && node.id === START_NODE && !isVisited) {
+                    ctx.strokeStyle = '#818cf8'; 
+                    ctx.lineWidth = 4 * scale;
+                } else {
+                    ctx.strokeStyle = isVisited ? COLORS.edgeMST : COLORS.nodeBorder;
+                }
+                ctx.stroke();
+
+                ctx.fillStyle = COLORS.nodeText;
+                ctx.font = `bold ${16 * scale}px 'Inter'`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(node.id, p.x, p.y);
+            });
+        }
+
+        // --- UI Updates ---
+        function updateUI() {
+            document.getElementById('cost-display').innerText = totalCost;
+            document.getElementById('mistakes-display').innerText = mistakes;
+            document.getElementById('visited-count').innerText = visitedNodes.size;
+
+            const visitedContainer = document.getElementById('visited-nodes-container');
+            visitedContainer.innerHTML = '';
+            
+            const sortedNodes = Array.from(visitedNodes).sort();
+            
+            sortedNodes.forEach(n => {
+                const el = document.createElement('div');
+                el.className = 'w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold border-2 border-indigo-400 shadow-[0_0_10px_rgba(79,70,229,0.5)]';
+                el.innerText = n;
+                visitedContainer.appendChild(el);
+            });
+        }
+
+        function logAction(msg, type) {
+            const logContainer = document.getElementById('action-log');
+            const el = document.createElement('div');
+            
+            let colorClass = 'text-slate-400';
+            let icon = '>';
+            if (type === 'success') {
+                colorClass = 'text-emerald-400';
+                icon = '+';
+            } else if (type === 'error') {
+                colorClass = 'text-rose-400';
+                icon = 'x';
+            } else if (type === 'info') {
+                colorClass = 'text-indigo-400';
+                icon = 'i';
+            }
+
+            el.innerHTML = `<span class="opacity-50 mr-2">${icon}</span><span class="${colorClass}">${msg}</span>`;
+            logContainer.appendChild(el);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        function showToast(msg, type) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'success' ? 'bg-emerald-900/90 border-emerald-500 text-emerald-100' : 'bg-rose-900/90 border-rose-500 text-rose-100';
+            const icon = type === 'success' 
+                ? `<svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>`
+                : `<svg class="w-5 h-5 text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>`;
+
+            toast.className = `flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg backdrop-blur-sm toast-enter ${bgClass} max-w-sm`;
+            toast.innerHTML = `${icon} <span class="text-sm font-medium leading-tight">${msg}</span>`;
+            
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.replace('toast-enter', 'toast-exit');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Start everything
+        window.onload = init;
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear & Binary Search Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            /* Optimized for 1920x1080 Landscape */
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .array-box {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        .box-idle { background-color: #ffffff; border: 2px solid #cbd5e1; color: #334155; }
+        .box-checking { background-color: #fef08a; border: 2px solid #eab308; color: #854d0e; transform: scale(1.05); }
+        .box-found { background-color: #bbf7d0; border: 2px solid #22c55e; color: #166534; transform: scale(1.1); font-weight: bold; }
+        .box-discarded { background-color: #f1f5f9; border: 2px solid #e2e8f0; color: #94a3b8; opacity: 0.5; }
+        
+        .pointer {
+            transition: all 0.3s ease;
+        }
+
+        .log-entry {
+            animation: slideIn 0.3s ease-out forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Scrollbar styling for log area */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body>
+
+    <!-- Header Navigation -->
+    <header class="bg-white shadow-sm px-8 py-4 flex justify-between items-center shrink-0 z-10 relative">
+        <div class="flex items-center gap-4">
+            <div class="bg-indigo-600 text-white p-2 rounded-lg">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 tracking-tight">Search Algorithms</h1>
+        </div>
+        
+        <nav class="flex bg-gray-100 p-1 rounded-xl shadow-inner gap-1">
+            <button onclick="switchTab('linear')" id="tab-linear" class="tab-btn px-6 py-3 rounded-lg text-lg font-semibold bg-white text-indigo-700 shadow transition-all">Linear Search</button>
+            <button onclick="switchTab('binary')" id="tab-binary" class="tab-btn px-6 py-3 rounded-lg text-lg font-semibold text-gray-600 hover:text-indigo-600 transition-all">Binary Search</button>
+            <button onclick="switchTab('comparison')" id="tab-comparison" class="tab-btn px-6 py-3 rounded-lg text-lg font-semibold text-gray-600 hover:text-indigo-600 transition-all">Comparison</button>
+        </nav>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-hidden relative">
+        
+        <!-- ==================== LINEAR SEARCH TAB ==================== -->
+        <div id="view-linear" class="absolute inset-0 flex p-8 gap-8 transition-opacity duration-300">
+            
+            <!-- Theory Section -->
+            <div class="w-1/3 bg-white rounded-2xl shadow-lg p-8 flex flex-col gap-6 overflow-y-auto">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2 border-b-4 border-indigo-500 pb-2 inline-block">Linear Search</h2>
+                    <p class="text-gray-600 text-lg mt-4 leading-relaxed">
+                        Also known as sequential search, it is the simplest search algorithm. It works by checking every element in an array or list sequentially, one by one, from the beginning to the end, until the desired target element is found.
+                    </p>
+                </div>
+                
+                <div class="bg-indigo-50 rounded-xl p-6">
+                    <h3 class="text-xl font-bold text-indigo-900 mb-3">How It Works</h3>
+                    <ol class="list-decimal list-inside text-indigo-800 space-y-2 text-lg">
+                        <li>Start at the first element (index 0).</li>
+                        <li>Compare current element with the target.</li>
+                        <li>If it matches, return the index.</li>
+                        <li>If not, move to the next element.</li>
+                        <li>Repeat until the end is reached.</li>
+                    </ol>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-6">
+                    <h3 class="text-xl font-bold text-slate-800 mb-3">Complexity</h3>
+                    <div class="grid grid-cols-2 gap-4 text-lg">
+                        <div><span class="font-semibold text-gray-700">Time:</span> <span class="text-red-600 font-mono bg-red-50 px-2 py-1 rounded">O(n)</span> worst-case.</div>
+                        <div><span class="font-semibold text-gray-700">Space:</span> <span class="text-green-600 font-mono bg-green-50 px-2 py-1 rounded">O(1)</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization Section -->
+            <div class="w-2/3 bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center">
+                <div class="flex justify-between items-center w-full mb-8">
+                    <h2 class="text-2xl font-bold text-gray-700">Interactive Demonstration</h2>
+                    <div class="text-xl bg-gray-100 px-6 py-3 rounded-xl border-2 border-gray-200">
+                        Target Value: <span class="font-bold text-indigo-700 text-2xl ml-2" id="linear-target-display">33</span>
+                    </div>
+                </div>
+
+                <!-- Array Visualization -->
+                <div class="flex-1 w-full flex flex-col items-center justify-center min-h-[300px]">
+                    <div class="flex gap-4 relative" id="linear-array-container">
+                        <!-- Boxes will be injected here via JS -->
+                    </div>
+                    <div class="h-16 mt-4 w-full relative" id="linear-pointer-container">
+                        <!-- Pointer injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Controls & Logs -->
+                <div class="w-full bg-slate-50 border border-slate-200 rounded-xl p-6 flex gap-8">
+                    <div class="flex flex-col gap-4 justify-center">
+                        <button id="linear-next-btn" onclick="linearNextStep()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg text-xl transition-all active:scale-95 flex items-center gap-2">
+                            Next Step <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                        </button>
+                        <button onclick="resetLinear()" class="bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-100 font-bold py-3 px-8 rounded-xl shadow text-lg transition-all active:scale-95">
+                            Reset Example
+                        </button>
+                    </div>
+                    <div class="flex-1 bg-white border border-gray-200 rounded-lg p-4 h-48 overflow-y-auto flex flex-col gap-2 font-mono text-lg shadow-inner" id="linear-log">
+                        <div class="text-gray-500 italic">Press "Next Step" to begin the linear search...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== BINARY SEARCH TAB ==================== -->
+        <div id="view-binary" class="absolute inset-0 flex p-8 gap-8 opacity-0 pointer-events-none transition-opacity duration-300">
+            
+            <!-- Theory Section -->
+            <div class="w-1/3 bg-white rounded-2xl shadow-lg p-8 flex flex-col gap-6 overflow-y-auto">
+                <div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-2 border-b-4 border-indigo-500 pb-2 inline-block">Binary Search</h2>
+                    <p class="text-gray-600 text-lg mt-4 leading-relaxed">
+                        A highly efficient algorithm that finds the position of a target value within a <strong class="text-indigo-600">sorted array</strong>. It works by repeatedly dividing the search interval in half.
+                    </p>
+                </div>
+                
+                <div class="bg-indigo-50 rounded-xl p-6">
+                    <h3 class="text-xl font-bold text-indigo-900 mb-3">How It Works</h3>
+                    <ol class="list-decimal list-inside text-indigo-800 space-y-2 text-lg">
+                        <li>Define pointers: <span class="font-mono bg-white px-1 rounded">Low</span> and <span class="font-mono bg-white px-1 rounded">High</span>.</li>
+                        <li>Calculate <span class="font-mono bg-white px-1 rounded">Mid = (Low + High) / 2</span>.</li>
+                        <li>Compare <span class="font-mono bg-white px-1 rounded">Mid</span> with target:
+                            <ul class="list-disc list-inside ml-6 mt-1 text-base">
+                                <li>Match? Return <span class="font-mono bg-white px-1 rounded">Mid</span>.</li>
+                                <li>Target &lt; Mid? Search Left (<span class="font-mono bg-white px-1 rounded">High = Mid - 1</span>).</li>
+                                <li>Target &gt; Mid? Search Right (<span class="font-mono bg-white px-1 rounded">Low = Mid + 1</span>).</li>
+                            </ul>
+                        </li>
+                        <li>Repeat until <span class="font-mono bg-white px-1 rounded">Low &gt; High</span>.</li>
+                    </ol>
+                </div>
+
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-6">
+                    <h3 class="text-xl font-bold text-slate-800 mb-3">Complexity</h3>
+                    <div class="grid grid-cols-2 gap-4 text-lg">
+                        <div><span class="font-semibold text-gray-700">Time:</span> <span class="text-green-600 font-mono bg-green-50 px-2 py-1 rounded">O(log n)</span> avg/worst.</div>
+                        <div><span class="font-semibold text-gray-700">Space:</span> <span class="text-green-600 font-mono bg-green-50 px-2 py-1 rounded">O(1)</span> iterative.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visualization Section -->
+            <div class="w-2/3 bg-white rounded-2xl shadow-lg p-8 flex flex-col items-center">
+                <div class="flex justify-between items-center w-full mb-8">
+                    <h2 class="text-2xl font-bold text-gray-700">Interactive Demonstration</h2>
+                    <div class="text-xl bg-gray-100 px-6 py-3 rounded-xl border-2 border-gray-200 flex items-center gap-4">
+                        <span>Sorted Array</span>
+                        <div class="h-6 w-px bg-gray-300"></div>
+                        <span>Target Value: <span class="font-bold text-indigo-700 text-2xl ml-2" id="binary-target-display">78</span></span>
+                    </div>
+                </div>
+
+                <!-- Array Visualization -->
+                <div class="flex-1 w-full flex flex-col items-center justify-center min-h-[300px]">
+                    <div class="flex gap-3 relative" id="binary-array-container">
+                        <!-- Boxes injected via JS -->
+                    </div>
+                    <!-- Pointers area (Low, Mid, High) -->
+                    <div class="h-20 mt-2 w-full relative" id="binary-pointer-container">
+                        <!-- Pointers injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Controls & Logs -->
+                <div class="w-full bg-slate-50 border border-slate-200 rounded-xl p-6 flex gap-8">
+                    <div class="flex flex-col gap-4 justify-center">
+                        <button id="binary-next-btn" onclick="binaryNextStep()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg text-xl transition-all active:scale-95 flex items-center gap-2">
+                            Next Step <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>
+                        </button>
+                        <button onclick="resetBinary()" class="bg-white border-2 border-gray-300 text-gray-600 hover:bg-gray-100 font-bold py-3 px-8 rounded-xl shadow text-lg transition-all active:scale-95">
+                            Reset Example
+                        </button>
+                    </div>
+                    <div class="flex-1 bg-white border border-gray-200 rounded-lg p-4 h-48 overflow-y-auto flex flex-col gap-2 font-mono text-lg shadow-inner" id="binary-log">
+                        <div class="text-gray-500 italic">Press "Next Step" to begin the binary search...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== COMPARISON TAB ==================== -->
+        <div id="view-comparison" class="absolute inset-0 p-8 opacity-0 pointer-events-none transition-opacity duration-300 overflow-y-auto">
+            <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-lg p-10 mt-8">
+                
+                <h2 class="text-4xl font-bold text-center text-gray-800 mb-2">Differences Summary</h2>
+                <p class="text-center text-gray-500 text-xl mb-10">A side-by-side comparison of the two algorithms.</p>
+
+                <div class="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-indigo-50 text-indigo-900 text-xl">
+                                <th class="p-6 border-b-2 border-indigo-200 w-1/2 rounded-tl-xl font-bold">Linear Search</th>
+                                <th class="p-6 border-b-2 border-indigo-200 w-1/2 rounded-tr-xl font-bold">Binary Search</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-lg text-gray-700 divide-y divide-gray-200">
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="p-6">Does <strong class="text-indigo-600">not require</strong> the dataset to be sorted.</td>
+                                <td class="p-6"><strong class="text-indigo-600">Requires</strong> the dataset to be sorted beforehand.</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="p-6">Follows a sequential element-by-element access approach.</td>
+                                <td class="p-6">Follows a divide and conquer mathematical approach.</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="p-6">Worst-case time complexity is significantly higher at <span class="font-mono font-bold bg-red-100 text-red-800 px-2 py-1 rounded">O(n)</span>.</td>
+                                <td class="p-6">Worst-case time complexity is significantly lower at <span class="font-mono font-bold bg-green-100 text-green-800 px-2 py-1 rounded">O(log n)</span>.</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="p-6">Highly efficient and preferred for <strong class="text-gray-900">small</strong> datasets.</td>
+                                <td class="p-6">Highly efficient and exclusively preferred for <strong class="text-gray-900">large</strong> datasets.</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="p-6">Can be easily used on both arrays and linked lists.</td>
+                                <td class="p-6">Best suited for arrays with direct index access.</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50 transition-colors">
+                                <td class="p-6">Easy to implement and utilize on multidimensional arrays.</td>
+                                <td class="p-6">Complex to implement and utilize on multidimensional arrays.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-12 bg-indigo-600 text-white p-8 rounded-2xl text-center shadow-lg relative overflow-hidden">
+                    <div class="absolute -right-10 -top-10 opacity-10">
+                        <svg class="w-48 h-48" fill="currentColor" viewBox="0 0 20 20"><path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z"></path></svg>
+                    </div>
+                    <p class="text-3xl font-medium italic relative z-10">
+                        "Linear search reads the whole book to find a word.<br>
+                        <span class="font-bold text-indigo-200 mt-2 block">Binary search opens the dictionary exactly in the middle."</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ==========================================
+        // UI Navigation Logic
+        // ==========================================
+        function switchTab(tabId) {
+            // Update buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-indigo-700', 'shadow');
+                btn.classList.add('text-gray-600', 'hover:text-indigo-600');
+            });
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.add('bg-white', 'text-indigo-700', 'shadow');
+            activeBtn.classList.remove('text-gray-600', 'hover:text-indigo-600');
+
+            // Update Views
+            document.querySelectorAll('main > div').forEach(view => {
+                view.classList.add('opacity-0', 'pointer-events-none');
+            });
+            const activeView = document.getElementById(`view-${tabId}`);
+            activeView.classList.remove('opacity-0', 'pointer-events-none');
+
+            // Reset specific tab states when entering to ensure fresh start (optional, disabled to preserve state)
+            // if(tabId === 'linear') resetLinear();
+            // if(tabId === 'binary') resetBinary();
+        }
+
+        // ==========================================
+        // Linear Search Logic & Visualization
+        // ==========================================
+        const linearConfig = {
+            array: [24, 13, 9, 45, 22, 17, 8, 33, 50, 11, 29, 38],
+            target: 33
+        };
+        let linearState = {
+            currentIndex: -1,
+            status: 'idle' // idle, running, found, not_found
+        };
+
+        function renderLinear() {
+            const container = document.getElementById('linear-array-container');
+            container.innerHTML = '';
+            container.className = 'flex gap-2 md:gap-3 relative justify-center flex-wrap lg:flex-nowrap w-full';
+            
+            linearConfig.array.forEach((val, index) => {
+                const box = document.createElement('div');
+                box.className = `array-box w-12 h-12 md:w-16 md:h-16 rounded-lg md:rounded-xl flex flex-col items-center justify-center text-xl md:text-2xl font-bold relative shrink-0 `;
+                
+                // Determine styling based on state
+                if (linearState.status === 'idle') {
+                    box.classList.add('box-idle');
+                } else {
+                    if (index === linearState.currentIndex) {
+                        if (linearState.status === 'found') {
+                            box.classList.add('box-found');
+                        } else {
+                            box.classList.add('box-checking');
+                        }
+                    } else if (index < linearState.currentIndex) {
+                        box.classList.add('box-discarded');
+                    } else {
+                        box.classList.add('box-idle');
+                    }
+                }
+
+                // Index indicator
+                const indexLabel = document.createElement('div');
+                indexLabel.className = 'absolute -bottom-6 md:-bottom-8 text-gray-500 text-xs md:text-sm font-normal';
+                indexLabel.innerText = `idx: ${index}`;
+                
+                box.innerText = val;
+                box.appendChild(indexLabel);
+                container.appendChild(box);
+            });
+        }
+
+        function linearNextStep() {
+            const logContainer = document.getElementById('linear-log');
+            const btn = document.getElementById('linear-next-btn');
+
+            if (linearState.status === 'found' || linearState.status === 'not_found') {
+                return; // End of algorithm
+            }
+
+            // Start search
+            if (linearState.status === 'idle') {
+                linearState.status = 'running';
+                linearState.currentIndex = 0;
+                logContainer.innerHTML = ''; // Clear initial message
+            } else {
+                linearState.currentIndex++;
+            }
+
+            // Check boundaries
+            if (linearState.currentIndex >= linearConfig.array.length) {
+                linearState.status = 'not_found';
+                linearState.currentIndex = -1;
+                logMessage(logContainer, `Reached end of array. Target ${linearConfig.target} not found.`, 'text-red-600');
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                renderLinear();
+                return;
+            }
+
+            const currentVal = linearConfig.array[linearState.currentIndex];
+            
+            // Compare
+            if (currentVal === linearConfig.target) {
+                linearState.status = 'found';
+                logMessage(logContainer, `Step ${linearState.currentIndex + 1}: Check index ${linearState.currentIndex}. Value is ${currentVal}. <br> <span class="text-green-600 font-bold">(${currentVal} == ${linearConfig.target}) - Match found! Return index ${linearState.currentIndex}.</span>`, 'text-green-800');
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.innerHTML = 'Search Complete';
+            } else {
+                logMessage(logContainer, `Step ${linearState.currentIndex + 1}: Check index ${linearState.currentIndex}. Value is ${currentVal}. <br> <span class="text-amber-600">(${currentVal} &ne; ${linearConfig.target}) - Move to next.</span>`, 'text-gray-700');
+            }
+
+            renderLinear();
+        }
+
+        function resetLinear() {
+            linearState = { currentIndex: -1, status: 'idle' };
+            const logContainer = document.getElementById('linear-log');
+            logContainer.innerHTML = '<div class="text-gray-500 italic">Press "Next Step" to begin the linear search...</div>';
+            
+            const btn = document.getElementById('linear-next-btn');
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            btn.innerHTML = `Next Step <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>`;
+            
+            renderLinear();
+        }
+
+
+        // ==========================================
+        // Binary Search Logic & Visualization
+        // ==========================================
+        const binaryConfig = {
+            array: [3, 8, 12, 17, 24, 29, 35, 42, 51, 58, 63, 70, 78, 85, 92],
+            target: 78
+        };
+        let binaryState = {
+            low: 0,
+            high: binaryConfig.array.length - 1,
+            mid: null,
+            phase: 'start', // start -> calc_mid -> check -> adjust -> calc_mid...
+            status: 'idle',
+            passCounter: 1
+        };
+
+        function renderBinary() {
+            const container = document.getElementById('binary-array-container');
+            const pointerContainer = document.getElementById('binary-pointer-container');
+            container.innerHTML = '';
+            pointerContainer.innerHTML = '';
+            
+            container.className = 'flex gap-1 md:gap-2 relative w-full justify-center';
+            pointerContainer.className = 'flex gap-1 md:gap-2 relative w-full justify-center h-20 mt-2';
+            
+            binaryConfig.array.forEach((val, index) => {
+                const box = document.createElement('div');
+                box.className = `array-box w-9 h-9 md:w-14 md:h-14 lg:w-16 lg:h-16 rounded-lg lg:rounded-xl flex flex-col items-center justify-center text-sm md:text-xl lg:text-2xl font-bold relative shrink-0 `;
+                
+                // Styling based on state
+                if (binaryState.status === 'idle') {
+                    box.classList.add('box-idle');
+                } else {
+                    // Out of bounds (discarded)
+                    if (index < binaryState.low || index > binaryState.high) {
+                        box.classList.add('box-discarded');
+                    } else if (index === binaryState.mid) {
+                        if (binaryState.status === 'found') {
+                            box.classList.add('box-found');
+                        } else {
+                            box.classList.add('box-checking');
+                        }
+                    } else {
+                        box.classList.add('box-idle');
+                    }
+                }
+
+                // Index indicator
+                const indexLabel = document.createElement('div');
+                indexLabel.className = 'absolute -bottom-5 md:-bottom-6 text-gray-500 text-[9px] md:text-xs font-normal';
+                indexLabel.innerText = `${index}`;
+                
+                box.innerText = val;
+                box.appendChild(indexLabel);
+                container.appendChild(box);
+
+                // Add pointer markers aligned using flexbox
+                const ptrBox = document.createElement('div');
+                ptrBox.className = `w-9 md:w-14 lg:w-16 flex flex-col items-center relative shrink-0`;
+                
+                if (binaryState.status !== 'idle') {
+                    if (index === binaryState.low || index === binaryState.high || index === binaryState.mid) {
+                        let labels = [];
+                        if (index === binaryState.low) labels.push('<span class="bg-blue-100 text-blue-800 px-1 md:px-2 py-0.5 rounded font-bold border border-blue-300 text-[9px] md:text-xs shadow-sm">Low</span>');
+                        if (index === binaryState.mid) labels.push('<span class="bg-amber-100 text-amber-800 px-1 md:px-2 py-0.5 rounded font-bold border border-amber-300 text-[9px] md:text-xs shadow-sm">Mid</span>');
+                        if (index === binaryState.high) labels.push('<span class="bg-purple-100 text-purple-800 px-1 md:px-2 py-0.5 rounded font-bold border border-purple-300 text-[9px] md:text-xs shadow-sm">High</span>');
+                        
+                        // Prevent overlapping labels by stacking them
+                        ptrBox.innerHTML = `
+                            <div class="h-4 w-px bg-gray-400 mb-1"></div>
+                            <div class="flex flex-col gap-1 items-center z-10">
+                                ${labels.join('')}
+                            </div>
+                        `;
+                    }
+                }
+                pointerContainer.appendChild(ptrBox);
+            });
+        }
+
+        function binaryNextStep() {
+            const logContainer = document.getElementById('binary-log');
+            const btn = document.getElementById('binary-next-btn');
+
+            if (binaryState.status === 'found' || binaryState.status === 'not_found') {
+                return;
+            }
+
+            if (binaryState.status === 'idle') {
+                binaryState.status = 'running';
+                logContainer.innerHTML = ''; 
+                logMessage(logContainer, `Initial State: Low = ${binaryState.low}, High = ${binaryState.high}.`, 'text-blue-700 font-bold');
+                binaryState.phase = 'calc_mid';
+            }
+
+            if (binaryState.low > binaryState.high) {
+                binaryState.status = 'not_found';
+                logMessage(logContainer, `Low (${binaryState.low}) is greater than High (${binaryState.high}). Target not found!`, 'text-red-600 font-bold');
+                disableBtn(btn);
+                renderBinary();
+                return;
+            }
+
+            if (binaryState.phase === 'calc_mid') {
+                binaryState.mid = Math.floor((binaryState.low + binaryState.high) / 2);
+                const midVal = binaryConfig.array[binaryState.mid];
+                
+                let htmlLog = `<div class="border-l-4 border-indigo-400 pl-3 py-1 mt-2">
+                    <span class="font-bold text-gray-800">Pass ${binaryState.passCounter}:</span> Low = ${binaryState.low}, High = ${binaryState.high}.<br>
+                    Calculate Mid = floor((${binaryState.low} + ${binaryState.high}) / 2) = <strong class="text-amber-600">${binaryState.mid}</strong>.<br>
+                    Value at Mid is ${midVal}.
+                </div>`;
+                logMessageHTML(logContainer, htmlLog);
+                
+                binaryState.phase = 'check';
+            } 
+            else if (binaryState.phase === 'check') {
+                const midVal = binaryConfig.array[binaryState.mid];
+                
+                if (midVal === binaryConfig.target) {
+                    binaryState.status = 'found';
+                    logMessage(logContainer, `Since ${midVal} == ${binaryConfig.target}, Match found! Return index ${binaryState.mid}.`, 'text-green-700 font-bold ml-4');
+                    disableBtn(btn);
+                } 
+                else if (midVal < binaryConfig.target) {
+                    logMessageHTML(logContainer, `<div class="ml-4 text-gray-700">Since ${midVal} < ${binaryConfig.target}, target must be in the right half.<br><span class="text-gray-500">Discard left half (indices ${binaryState.low} to ${binaryState.mid}).</span> Update Low = Mid + 1.</div>`);
+                    binaryState.low = binaryState.mid + 1;
+                    binaryState.phase = 'calc_mid';
+                    binaryState.passCounter++;
+                } 
+                else {
+                    logMessageHTML(logContainer, `<div class="ml-4 text-gray-700">Since ${midVal} > ${binaryConfig.target}, target must be in the left half.<br><span class="text-gray-500">Discard right half (indices ${binaryState.mid} to ${binaryState.high}).</span> Update High = Mid - 1.</div>`);
+                    binaryState.high = binaryState.mid - 1;
+                    binaryState.phase = 'calc_mid';
+                    binaryState.passCounter++;
+                }
+            }
+
+            renderBinary();
+        }
+
+        function resetBinary() {
+            binaryState = {
+                low: 0,
+                high: binaryConfig.array.length - 1,
+                mid: null,
+                phase: 'start',
+                status: 'idle',
+                passCounter: 1
+            };
+            const logContainer = document.getElementById('binary-log');
+            logContainer.innerHTML = '<div class="text-gray-500 italic">Press "Next Step" to begin the binary search...</div>';
+            
+            const btn = document.getElementById('binary-next-btn');
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            btn.innerHTML = `Next Step <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"></path></svg>`;
+            
+            renderBinary();
+        }
+
+
+        // ==========================================
+        // Helper Functions
+        // ==========================================
+        function logMessage(container, text, classes = 'text-gray-800') {
+            const div = document.createElement('div');
+            div.className = `log-entry ${classes} py-1`;
+            div.innerHTML = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function logMessageHTML(container, htmlContent) {
+            const div = document.createElement('div');
+            div.className = `log-entry`;
+            div.innerHTML = htmlContent;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function disableBtn(btn) {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            btn.innerHTML = 'Search Complete';
+        }
+
+        // Initialize App
+        window.onload = () => {
+            renderLinear();
+            renderBinary();
+        };
+
+    </script>
+</body>
+</html>

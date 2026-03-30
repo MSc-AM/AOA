@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N-Queens Problem – Interactive Visualization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        .board-square {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .square-light {
+            background-color: #F0D9B5;
+        }
+        .square-dark {
+            background-color: #B58863;
+        }
+        /* Highlight Overlays */
+        .highlight-testing {
+            box-shadow: inset 0 0 0 4px #eab308;
+            background-color: rgba(253, 224, 71, 0.4) !important;
+        }
+        .highlight-safe {
+            box-shadow: inset 0 0 0 4px #22c55e;
+            background-color: rgba(74, 222, 128, 0.4) !important;
+        }
+        .highlight-conflict {
+            box-shadow: inset 0 0 0 4px #ef4444;
+            background-color: rgba(248, 113, 113, 0.4) !important;
+        }
+        .highlight-attacker {
+            background-color: rgba(239, 68, 68, 0.7) !important;
+            box-shadow: inset 0 0 15px #7f1d1d;
+        }
+        .queen {
+            color: #1e293b;
+            text-shadow: 0px 2px 4px rgba(0,0,0,0.3);
+            user-select: none;
+        }
+        .ghost-queen {
+            opacity: 0.4;
+        }
+        .backtrack-anim {
+            animation: shake 0.5s ease-in-out, fadeOut 0.5s forwards;
+            color: #ef4444;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: scale(0.5); }
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+    <!-- Header -->
+    <header class="bg-slate-900 text-white py-6 shadow-md">
+        <div class="max-w-6xl mx-auto px-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold">The N-Queens Problem</h1>
+                <p class="text-slate-300 mt-1">Visualizing Backtracking for N = 4</p>
+            </div>
+            <button onclick="document.getElementById('visualizer').scrollIntoView({behavior: 'smooth'})" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold transition shadow-lg">
+                Start Visualization
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Column: Explanations -->
+        <div class="lg:col-span-5 space-y-8">
+            
+            <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-xl font-bold text-slate-900 mb-3 border-b pb-2">1. Problem Definition</h2>
+                <p class="mb-3 text-sm leading-relaxed">
+                    The N-Queens puzzle is the problem of placing <strong>N</strong> chess queens on an <strong>N × N</strong> chessboard so that no two queens threaten each other.
+                </p>
+                <p class="mb-2 text-sm">For <strong>N = 4</strong>, we must place 4 queens on a 4×4 board following these strict rules:</p>
+                <ul class="list-decimal pl-5 text-sm space-y-1 text-slate-700">
+                    <li>No two queens can share the <strong>same row</strong>.</li>
+                    <li>No two queens can share the <strong>same column</strong>.</li>
+                    <li>No two queens can share the <strong>same diagonal</strong>.</li>
+                </ul>
+            </section>
+
+            <section class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <h2 class="text-xl font-bold text-slate-900 mb-3 border-b pb-2">2. The Backtracking Approach</h2>
+                <p class="mb-3 text-sm leading-relaxed">
+                    Backtracking is an algorithmic technique for solving problems recursively by trying to build a solution incrementally, one piece at a time, and removing those solutions that fail to satisfy the constraints of the problem at any point of time.
+                </p>
+                <h3 class="font-semibold text-slate-800 mt-4 mb-2">Algorithm Logic (Row by Row)</h3>
+                <ol class="list-decimal pl-5 text-sm space-y-2 text-slate-700">
+                    <li>Start in the leftmost column of the current row (Row 1).</li>
+                    <li>If all queens are placed, return true (Solution found).</li>
+                    <li>Try all columns (1 to 4) in the current row. For each column:
+                        <ul class="list-disc pl-5 mt-1 space-y-1">
+                            <li>If placing the queen is <strong>safe</strong> (no conflicts), place the queen and recursively check the next row.</li>
+                            <li>If checking the next row leads to a solution, return true.</li>
+                            <li>If it leads to a dead end, <strong>backtrack</strong> (remove the queen) and try the next column.</li>
+                        </ul>
+                    </li>
+                    <li>If all columns have been tried and no safe spot is found, return false to trigger backtracking in the previous row.</li>
+                </ol>
+            </section>
+
+            <section class="bg-blue-50 p-6 rounded-xl shadow-sm border border-blue-200">
+                <h2 class="text-lg font-bold text-blue-900 mb-2">Legend & Visuals</h2>
+                <ul class="space-y-2 text-sm text-blue-800">
+                    <li class="flex items-center"><span class="w-4 h-4 rounded bg-yellow-400 border-2 border-yellow-500 mr-2"></span> <strong>Yellow:</strong> Testing a column</li>
+                    <li class="flex items-center"><span class="w-4 h-4 rounded bg-green-400 border-2 border-green-500 mr-2"></span> <strong>Green:</strong> Safe placement / Solution</li>
+                    <li class="flex items-center"><span class="w-4 h-4 rounded bg-red-400 border-2 border-red-500 mr-2"></span> <strong>Red:</strong> Conflict (Attacking Queen)</li>
+                </ul>
+            </section>
+        </div>
+
+        <!-- Right Column: Interactive Visualizer -->
+        <div id="visualizer" class="lg:col-span-7 flex flex-col items-center">
+            
+            <!-- Dynamic Status Banner -->
+            <div id="status-banner" class="w-full mb-6 p-4 rounded-lg shadow-md border-l-4 bg-white border-slate-400 transition-colors duration-300 min-h-[5rem] flex items-center">
+                <p id="status-text" class="text-slate-800 font-medium text-lg w-full text-center">
+                    Click "Start" to begin the algorithm visualization.
+                </p>
+            </div>
+
+            <!-- Chessboard Container -->
+            <div class="bg-white p-4 rounded-xl shadow-lg border border-slate-200 w-full max-w-md aspect-square relative flex items-center justify-center mb-6">
+                <div id="chessboard" class="w-full h-full grid grid-cols-4 grid-rows-4 border-2 border-slate-800 shadow-inner">
+                    <!-- JavaScript will populate 16 squares here -->
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex flex-wrap justify-center gap-3 w-full max-w-md">
+                <button id="btn-start" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow">
+                    Start / Auto-Play
+                </button>
+                <button id="btn-prev" class="bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold py-2 px-4 rounded shadow disabled:opacity-50" disabled>
+                    &larr; Prev
+                </button>
+                <button id="btn-next" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2 px-4 rounded shadow disabled:opacity-50" disabled>
+                    Next &rarr;
+                </button>
+                <button id="btn-reset" class="bg-red-100 hover:bg-red-200 text-red-700 font-semibold py-2 px-4 rounded shadow">
+                    Reset
+                </button>
+            </div>
+            
+            <!-- Progress Tracker -->
+            <div class="w-full max-w-md mt-4 text-center text-sm text-slate-500 font-medium">
+                Step <span id="step-counter">0</span> of <span id="total-steps">0</span>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- 1. Algorithm Logic & Step Generation ---
+        const N = 4;
+        let steps = [];
+        
+        // Helper to check for conflicts and identify the attacker
+        function getConflict(row, col, board) {
+            for (let i = 0; i < row; i++) {
+                if (board[i] === col) {
+                    return { row: i, col: board[i], type: 'column' };
+                }
+                if (Math.abs(board[i] - col) === Math.abs(i - row)) {
+                    return { row: i, col: board[i], type: 'diagonal' };
+                }
+            }
+            return null; // Safe
+        }
+
+        // Generate the entire state-space tree steps for visualization
+        function precomputeAlgorithmSteps() {
+            steps = [];
+            let board = Array(N).fill(-1); // Indices are rows, values are columns
+            
+            steps.push({
+                type: 'info',
+                board: [...board],
+                msg: "Starting Backtracking Algorithm. Board is empty. Proceeding Row by Row."
+            });
+
+            function solve(row) {
+                // Base case: All queens placed successfully (Solution)
+                if (row === N) {
+                    steps.push({
+                        type: 'solution',
+                        board: [...board],
+                        msg: "🎉 SOLUTION FOUND! All 4 queens are safely placed according to the rules."
+                    });
+                    return true; // We only want the first solution for this visualization to match the primary flow
+                }
+
+                // Try placing a queen in all columns of the current row
+                for (let col = 0; col < N; col++) {
+                    
+                    steps.push({
+                        type: 'testing',
+                        board: [...board],
+                        r: row, c: col,
+                        msg: `Trying to place a queen at Row ${row + 1}, Column ${col + 1}...`
+                    });
+
+                    let conflict = getConflict(row, col, board);
+
+                    if (!conflict) {
+                        board[row] = col; // Place queen
+                        
+                        steps.push({
+                            type: 'safe',
+                            board: [...board],
+                            r: row, c: col,
+                            msg: `Safe! No conflicts. Placing queen and moving recursively to Row ${row + 2}.`
+                        });
+
+                        let foundSolution = solve(row + 1);
+                        if (foundSolution) return true; // Stop after first solution
+
+                        // If solving next row fails, BACKTRACK
+                        steps.push({
+                            type: 'backtrack',
+                            board: [...board], // Board still has the queen before removing
+                            r: row, c: col,
+                            msg: `Dead end! No valid placements in subsequent rows. Backtracking: Removing queen from Row ${row + 1}, Column ${col + 1}.`
+                        });
+                        
+                        board[row] = -1; // Remove queen
+
+                    } else {
+                        // Conflict found
+                        steps.push({
+                            type: 'conflict',
+                            board: [...board],
+                            r: row, c: col,
+                            attacker: conflict,
+                            msg: `Conflict! Threatened by the queen at Row ${conflict.row + 1}, Column ${conflict.col + 1} (Shared ${conflict.type}).`
+                        });
+                    }
+                }
+                
+                // If all columns in a row fail
+                if(row > 0) {
+                     steps.push({
+                        type: 'info',
+                        board: [...board],
+                        msg: `All columns tested in Row ${row + 1} failed. Triggering backtrack to Row ${row}.`
+                    });
+                }
+
+                return false;
+            }
+
+            solve(0);
+            return steps;
+        }
+
+
+        // --- 2. UI Rendering & Interactivity ---
+        
+        let currentStepIndex = 0;
+        let isPlaying = false;
+        let playInterval;
+        
+        const boardEl = document.getElementById('chessboard');
+        const statusBanner = document.getElementById('status-banner');
+        const statusText = document.getElementById('status-text');
+        const stepCounter = document.getElementById('step-counter');
+        const totalStepsEl = document.getElementById('total-steps');
+        
+        const btnStart = document.getElementById('btn-start');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const btnReset = document.getElementById('btn-reset');
+
+        // Initialize empty board grid
+        function initializeBoardHTML() {
+            boardEl.innerHTML = '';
+            for (let r = 0; r < N; r++) {
+                for (let c = 0; c < N; c++) {
+                    const square = document.createElement('div');
+                    square.id = `sq-${r}-${c}`;
+                    square.classList.add('board-square');
+                    // Alternate colors
+                    if ((r + c) % 2 === 0) {
+                        square.classList.add('square-light');
+                    } else {
+                        square.classList.add('square-dark');
+                    }
+                    boardEl.appendChild(square);
+                }
+            }
+        }
+
+        // Render a specific step state
+        function renderStep(index) {
+            if (index < 0 || index >= steps.length) return;
+            
+            const step = steps[index];
+            
+            // 1. Reset board visuals completely
+            for (let r = 0; r < N; r++) {
+                for (let c = 0; c < N; c++) {
+                    const sq = document.getElementById(`sq-${r}-${c}`);
+                    sq.innerHTML = ''; // Clear queens
+                    sq.className = 'board-square ' + ((r + c) % 2 === 0 ? 'square-light' : 'square-dark'); // Reset classes
+                }
+            }
+
+            // 2. Draw placed queens based on the board array state
+            for (let r = 0; r < N; r++) {
+                const c = step.board[r];
+                if (c !== -1) {
+                    const sq = document.getElementById(`sq-${r}-${c}`);
+                    sq.innerHTML = '<span class="queen">♛</span>';
+                }
+            }
+
+            // 3. Apply specific visual highlights based on step type
+            statusBanner.className = 'w-full mb-6 p-4 rounded-lg shadow-md border-l-4 transition-colors duration-300 min-h-[5rem] flex items-center';
+            
+            if (step.type === 'testing') {
+                const sq = document.getElementById(`sq-${step.r}-${step.c}`);
+                sq.innerHTML = '<span class="queen ghost-queen">♛</span>';
+                sq.classList.add('highlight-testing');
+                statusBanner.classList.add('bg-yellow-50', 'border-yellow-500', 'text-yellow-900');
+            } 
+            else if (step.type === 'safe') {
+                const sq = document.getElementById(`sq-${step.r}-${step.c}`);
+                sq.innerHTML = '<span class="queen">♛</span>';
+                sq.classList.add('highlight-safe');
+                statusBanner.classList.add('bg-green-50', 'border-green-500', 'text-green-900');
+            }
+            else if (step.type === 'conflict') {
+                const sq = document.getElementById(`sq-${step.r}-${step.c}`);
+                sq.innerHTML = '<span class="queen ghost-queen">♛</span>';
+                sq.classList.add('highlight-conflict');
+                
+                // Highlight attacking queen
+                if (step.attacker) {
+                    const attackerSq = document.getElementById(`sq-${step.attacker.row}-${step.attacker.col}`);
+                    attackerSq.classList.add('highlight-attacker');
+                }
+                statusBanner.classList.add('bg-red-50', 'border-red-500', 'text-red-900');
+            }
+            else if (step.type === 'backtrack') {
+                const sq = document.getElementById(`sq-${step.r}-${step.c}`);
+                sq.innerHTML = '<span class="queen backtrack-anim">♛</span>';
+                statusBanner.classList.add('bg-orange-50', 'border-orange-500', 'text-orange-900');
+            }
+            else if (step.type === 'solution') {
+                for (let r = 0; r < N; r++) {
+                    const c = step.board[r];
+                    if(c !== -1){
+                        document.getElementById(`sq-${r}-${c}`).classList.add('highlight-safe');
+                    }
+                }
+                statusBanner.classList.add('bg-green-100', 'border-green-600', 'text-green-900');
+            }
+            else if (step.type === 'info') {
+                 statusBanner.classList.add('bg-blue-50', 'border-blue-500', 'text-blue-900');
+            }
+
+            // Update text and counters
+            statusText.innerHTML = step.msg;
+            stepCounter.innerText = index;
+            totalStepsEl.innerText = steps.length - 1;
+
+            // Update button states
+            btnPrev.disabled = index === 0;
+            btnNext.disabled = index === steps.length - 1;
+            
+            if(index === steps.length - 1) {
+                stopAutoPlay();
+            }
+        }
+
+        // --- 3. Controls & Setup ---
+        
+        function nextStep() {
+            if (currentStepIndex < steps.length - 1) {
+                currentStepIndex++;
+                renderStep(currentStepIndex);
+            }
+        }
+
+        function prevStep() {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+                renderStep(currentStepIndex);
+            }
+        }
+
+        function stopAutoPlay() {
+            isPlaying = false;
+            clearInterval(playInterval);
+            btnStart.innerHTML = "Auto-Play";
+            btnStart.classList.replace('bg-orange-600', 'bg-blue-600');
+            btnStart.classList.replace('hover:bg-orange-700', 'hover:bg-blue-700');
+        }
+
+        function toggleAutoPlay() {
+            if (isPlaying) {
+                stopAutoPlay();
+            } else {
+                if(currentStepIndex === steps.length - 1) currentStepIndex = 0; // Reset if at end
+                isPlaying = true;
+                btnStart.innerHTML = "Pause Auto-Play";
+                btnStart.classList.replace('bg-blue-600', 'bg-orange-600');
+                btnStart.classList.replace('hover:bg-blue-700', 'hover:bg-orange-700');
+                nextStep(); // Take immediate step
+                playInterval = setInterval(nextStep, 1500); // Step every 1.5 seconds
+            }
+        }
+
+        function resetAll() {
+            stopAutoPlay();
+            currentStepIndex = 0;
+            renderStep(0);
+            statusBanner.className = 'w-full mb-6 p-4 rounded-lg shadow-md border-l-4 bg-white border-slate-400 transition-colors duration-300 min-h-[5rem] flex items-center';
+            statusText.innerHTML = "Click \"Start\" to begin the algorithm visualization.";
+        }
+
+        // Event Listeners
+        btnNext.addEventListener('click', () => { stopAutoPlay(); nextStep(); });
+        btnPrev.addEventListener('click', () => { stopAutoPlay(); prevStep(); });
+        btnStart.addEventListener('click', toggleAutoPlay);
+        btnReset.addEventListener('click', resetAll);
+
+        // Initial Boot
+        window.onload = () => {
+            initializeBoardHTML();
+            precomputeAlgorithmSteps();
+            totalStepsEl.innerText = steps.length - 1;
+        };
+
+    </script>
+</body>
+</html>

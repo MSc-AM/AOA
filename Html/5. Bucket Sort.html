@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bucket Sort Interactive Lesson</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* Value Box Base Transitions */
+        .val-box {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Status Animations and Styles */
+        .status-default {
+            background-color: #ffffff;
+            border: 2px solid #cbd5e1;
+            color: #334155;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        
+        .status-active {
+            background-color: #fef3c7;
+            border: 2px solid #f59e0b;
+            color: #b45309;
+            transform: scale(1.15) translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .status-moved {
+            background-color: #f1f5f9;
+            border: 2px dashed #cbd5e1;
+            color: #cbd5e1;
+            opacity: 0.4;
+        }
+
+        .status-inserted {
+            background-color: #dbeafe;
+            border: 2px solid #3b82f6;
+            color: #1d4ed8;
+            animation: dropIn 0.4s ease-out forwards;
+        }
+
+        .status-sorting {
+            background-color: #f3e8ff;
+            border: 2px solid #a855f7;
+            color: #6b21a8;
+            transform: scale(1.1);
+            box-shadow: 0 4px 6px -1px rgba(168, 85, 247, 0.4);
+        }
+
+        .status-sorted {
+            background-color: #d1fae5;
+            border: 2px solid #10b981;
+            color: #047857;
+        }
+
+        .status-concatenating {
+            background-color: #ffedd5;
+            border: 2px solid #f97316;
+            color: #c2410c;
+            transform: scale(1.1);
+            z-index: 10;
+        }
+
+        .status-done {
+            background-color: #10b981;
+            border: 2px solid #059669;
+            color: #ffffff;
+            font-weight: bold;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);
+        }
+
+        @keyframes dropIn {
+            0% { transform: translateY(-20px) scale(1.1); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        /* Bucket container styling */
+        .bucket-container {
+            border-left: 3px solid #64748b;
+            border-right: 3px solid #64748b;
+            border-bottom: 3px solid #64748b;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+            background: linear-gradient(to bottom, transparent 0%, rgba(241, 245, 249, 0.5) 100%);
+        }
+
+        .math-symbol {
+            font-family: "Times New Roman", Times, serif;
+            font-style: italic;
+        }
+
+        /* Graph Paper background for visualization area */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, #e2e8f0 1px, transparent 1px),
+                linear-gradient(to bottom, #e2e8f0 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="flex flex-col h-screen overflow-hidden text-slate-800">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-indigo-900 text-white shadow-md z-20 flex-shrink-0">
+        <div class="px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-indigo-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <div>
+                    <h1 class="text-2xl font-bold leading-tight">Bucket Sort Algorithm</h1>
+                    <p class="text-indigo-200 text-sm">Interactive Teaching & Complexity Analysis Tool</p>
+                </div>
+            </div>
+            <div class="flex gap-2 text-sm bg-indigo-800 px-3 py-1.5 rounded-lg border border-indigo-700">
+                <span class="text-indigo-300">Target Range:</span>
+                <span class="font-bold code-font text-white">[0.0, 1.0)</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <main class="flex-1 flex flex-row overflow-hidden relative">
+        
+        <!-- LEFT PANEL: Teaching Notes (Based on PDF) -->
+        <aside class="w-1/3 min-w-[400px] bg-white border-r border-slate-200 overflow-y-auto flex flex-col z-10 shadow-lg">
+            <div class="p-8 space-y-8">
+                
+                <!-- Section 1 -->
+                <section>
+                    <h2 class="text-xl font-bold text-indigo-800 mb-3 flex items-center gap-2">
+                        <span class="bg-indigo-100 text-indigo-800 rounded-full w-8 h-8 flex items-center justify-center text-sm">1</span>
+                        Introduction
+                    </h2>
+                    <p class="text-slate-600 leading-relaxed text-sm">
+                        Bucket Sort is a <strong>non-comparison based</strong> sorting algorithm. Unlike Quick Sort or Merge Sort, it sorts without direct element-to-element comparison for initial placement. It operates alongside Radix Sort and Counting Sort.
+                    </p>
+                </section>
+
+                <!-- Section 2 -->
+                <section>
+                    <h2 class="text-xl font-bold text-indigo-800 mb-3 flex items-center gap-2">
+                        <span class="bg-indigo-100 text-indigo-800 rounded-full w-8 h-8 flex items-center justify-center text-sm">2</span>
+                        Prerequisites & Constraints
+                    </h2>
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-slate-700 space-y-3">
+                        <p><strong>Data Type & Range:</strong> Operates on floating-point numbers in the range <span class="code-font bg-white px-1 border rounded">[0.0, 1.0)</span>.</p>
+                        <p><strong>Data Distribution:</strong> Input elements must be uniformly and independently distributed for optimal efficiency.</p>
+                    </div>
+                </section>
+
+                <!-- Section 3 -->
+                <section>
+                    <h2 class="text-xl font-bold text-indigo-800 mb-3 flex items-center gap-2">
+                        <span class="bg-indigo-100 text-indigo-800 rounded-full w-8 h-8 flex items-center justify-center text-sm">3</span>
+                        The Algorithm (Pseudocode)
+                    </h2>
+                    <div class="bg-slate-900 rounded-lg p-4 text-slate-300 text-sm code-font overflow-x-auto shadow-inner leading-relaxed">
+                        <div class="text-indigo-400 mb-2">// BucketSort(A)</div>
+                        <div class="pl-4">
+                            1. <span class="text-pink-400">n</span> = length[A]<br>
+                            2. <span class="text-blue-400">For</span> i = 0 <span class="text-blue-400">to</span> n-1:<br>
+                            3. &nbsp;&nbsp;&nbsp;&nbsp;Make B[i] an empty list<br>
+                            4. <span class="text-blue-400">For</span> i = 1 <span class="text-blue-400">to</span> n:<br>
+                            5. &nbsp;&nbsp;&nbsp;&nbsp;index = floor(<span class="text-pink-400">n</span> * A[i])<br>
+                            6. &nbsp;&nbsp;&nbsp;&nbsp;Insert A[i] into list B[index]<br>
+                            7. <span class="text-blue-400">For</span> i = 0 <span class="text-blue-400">to</span> n-1:<br>
+                            8. &nbsp;&nbsp;&nbsp;&nbsp;Sort list B[i] (Insertion Sort)<br>
+                            9. Concatenate B[0]...B[n-1]<br>
+                            10. <span class="text-blue-400">Return</span> concatenated list
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 4 -->
+                <section>
+                    <h2 class="text-xl font-bold text-indigo-800 mb-3 flex items-center gap-2">
+                        <span class="bg-indigo-100 text-indigo-800 rounded-full w-8 h-8 flex items-center justify-center text-sm">4</span>
+                        Complexity Analysis
+                    </h2>
+                    <div class="space-y-4 text-sm">
+                        <div class="border-l-4 border-emerald-500 pl-4 py-1">
+                            <h3 class="font-bold text-slate-800">Best & Average Case: <span class="math-symbol font-bold">O(n)</span></h3>
+                            <p class="text-slate-600 mt-1">Occurs with uniform distribution. Initializing buckets <span class="math-symbol">O(n)</span> + mapping <span class="math-symbol">O(n)</span> + sorting tiny buckets <span class="math-symbol">O(n)</span> + concatenation <span class="math-symbol">O(n)</span> = <span class="math-symbol">O(n)</span>.</p>
+                        </div>
+                        <div class="border-l-4 border-rose-500 pl-4 py-1 mt-3">
+                            <h3 class="font-bold text-slate-800">Worst Case: <span class="math-symbol font-bold">O(n<sup>2</sup>)</span></h3>
+                            <p class="text-slate-600 mt-1">Occurs when inputs are highly clustered (e.g., all mapped to one bucket). Degenerates into Insertion Sort, yielding <span class="math-symbol">O(n<sup>2</sup>)</span>.</p>
+                        </div>
+                    </div>
+                </section>
+
+            </div>
+        </aside>
+
+        <!-- RIGHT PANEL: Interactive Visualization -->
+        <section class="w-2/3 flex flex-col bg-slate-50 relative">
+            
+            <!-- Main Canvas -->
+            <div class="flex-1 p-8 overflow-y-auto bg-grid flex flex-col gap-10">
+                
+                <!-- Source Array Visualization -->
+                <div>
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">1. Unsorted Input Array (n=12)</h3>
+                    <div id="source-array-container" class="flex flex-wrap gap-3">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Buckets Visualization -->
+                <div>
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3 flex items-center justify-between">
+                        <span>2. Buckets (multiplier = 10)</span>
+                        <span class="text-xs font-normal normal-case bg-white border px-2 py-1 rounded text-slate-500">Formula: floor(10 × value)</span>
+                    </h3>
+                    
+                    <div id="buckets-container" class="grid grid-cols-10 gap-3">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Final Sorted Array Visualization -->
+                <div class="mt-auto">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">3. Final Sorted Array</h3>
+                    <div id="final-array-container" class="flex flex-wrap gap-3 p-4 bg-white rounded-xl border border-slate-200 shadow-sm min-h-[80px]">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Teaching Controls & Dynamic Explanation Banner -->
+            <div class="h-44 bg-white border-t border-slate-200 flex flex-col flex-shrink-0 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-20">
+                
+                <!-- Progress Bar -->
+                <div class="w-full bg-slate-100 h-1.5">
+                    <div id="progress-bar" class="bg-indigo-500 h-1.5 transition-all duration-300 w-0"></div>
+                </div>
+
+                <div class="flex-1 flex items-center justify-between px-8 py-4 gap-8">
+                    <!-- Dynamic Explanation Area -->
+                    <div class="flex-1">
+                        <div class="inline-block px-3 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-full mb-2 uppercase tracking-wide border border-indigo-100" id="phase-badge">
+                            Initialization Phase
+                        </div>
+                        <h3 id="step-title" class="text-xl font-bold text-slate-800 mb-1">Welcome to Bucket Sort</h3>
+                        <p id="step-description" class="text-slate-600 text-lg leading-snug transition-opacity duration-300">
+                            Use the controls to start the step-by-step algorithm demonstration.
+                        </p>
+                    </div>
+
+                    <!-- Interactive Controls -->
+                    <div class="flex flex-col items-end gap-3 flex-shrink-0">
+                        <div class="text-sm font-semibold text-slate-400">
+                            Step <span id="step-counter" class="text-slate-700 text-lg">0 / 0</span>
+                        </div>
+                        <div class="flex gap-3">
+                            <button id="btn-reset" class="px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded-lg border border-slate-300 hover:bg-slate-200 hover:text-slate-900 transition flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Reset
+                            </button>
+                            <button id="btn-prev" class="px-5 py-2 bg-white text-indigo-600 font-semibold rounded-lg border-2 border-indigo-200 hover:bg-indigo-50 hover:border-indigo-400 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                Prev Step
+                            </button>
+                            <button id="btn-next" class="px-6 py-2 bg-indigo-600 text-white font-semibold rounded-lg border-2 border-indigo-600 hover:bg-indigo-700 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                                Next Step
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="text-xs text-slate-400 mt-1">Tip: Use ← and → arrow keys</div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Application Logic -->
+    <script>
+        // Data Setup: Using a carefully chosen array to demonstrate all scenarios:
+        // empty buckets, single element buckets, and multiple element buckets (requiring sorting).
+        const rawInputArray = [0.72, 0.11, 0.65, 0.38, 0.19, 0.84, 0.51, 0.33, 0.05, 0.89, 0.35, 0.68];
+        const numBuckets = 10;
+        let algorithmStates = [];
+        let currentStateIndex = 0;
+
+        // DOM Elements
+        const elSourceArray = document.getElementById('source-array-container');
+        const elBuckets = document.getElementById('buckets-container');
+        const elFinalArray = document.getElementById('final-array-container');
+        
+        const elPhaseBadge = document.getElementById('phase-badge');
+        const elStepTitle = document.getElementById('step-title');
+        const elStepDescription = document.getElementById('step-description');
+        const elStepCounter = document.getElementById('step-counter');
+        const elProgressBar = document.getElementById('progress-bar');
+        
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const btnReset = document.getElementById('btn-reset');
+
+        // Helper: deep clone state
+        const clone = (obj) => JSON.parse(JSON.stringify(obj));
+
+        // ----------------------------------------------------------------------
+        // Step 1: Pre-calculate all states of the algorithm
+        // ----------------------------------------------------------------------
+        function generateAlgorithmStates() {
+            algorithmStates = [];
+            
+            // State 0: Initial
+            let state = {
+                phase: 'Initialization',
+                title: 'Unsorted Input Data',
+                description: 'We have an unsorted array of 12 elements. We initialize 10 empty buckets to cover the range [0.0, 1.0).',
+                sourceArray: rawInputArray.map((val, idx) => ({ id: `src-${idx}`, val: val, status: 'default' })),
+                buckets: Array.from({length: numBuckets}, () => []),
+                finalArray: []
+            };
+            algorithmStates.push(clone(state));
+
+            // Phase 1: Distribution
+            for(let i = 0; i < rawInputArray.length; i++) {
+                let val = rawInputArray[i];
+                let bIndex = Math.floor(numBuckets * val);
+
+                // Sub-step: Highlight in source and explain math
+                state.phase = 'Distribution Phase';
+                state.title = `Mapping Element ${val}`;
+                state.description = `Formula: floor(10 × <span class="font-bold text-indigo-600">${val}</span>) = <span class="font-bold text-indigo-600">${bIndex}</span>. The element will go into Bucket ${bIndex}.`;
+                state.sourceArray[i].status = 'active';
+                algorithmStates.push(clone(state));
+
+                // Sub-step: Move to bucket
+                state.title = `Inserting into Bucket ${bIndex}`;
+                state.description = `Element ${val} is moved into Bucket ${bIndex}.`;
+                state.sourceArray[i].status = 'moved';
+                state.buckets[bIndex].push({ id: `b-${bIndex}-${state.buckets[bIndex].length}`, val: val, status: 'inserted' });
+                algorithmStates.push(clone(state));
+
+                // Reset bucket item status for next step visual cleanliness
+                state.buckets[bIndex][state.buckets[bIndex].length - 1].status = 'default';
+            }
+
+            state.phase = 'Distribution Phase';
+            state.title = 'Distribution Complete';
+            state.description = 'All elements have been distributed. Notice how elements in the 0.3x range all landed in Bucket 3.';
+            algorithmStates.push(clone(state));
+
+            // Phase 2: Internal Bucket Sorting
+            for(let b = 0; b < numBuckets; b++) {
+                let bucket = state.buckets[b];
+                
+                state.phase = 'Sorting Phase';
+                state.title = `Examining Bucket ${b}`;
+
+                if (bucket.length === 0) {
+                    state.description = `Bucket ${b} is empty. No sorting required.`;
+                    algorithmStates.push(clone(state));
+                } else if (bucket.length === 1) {
+                    state.description = `Bucket ${b} contains exactly 1 element (${bucket[0].val}). It is already sorted.`;
+                    bucket[0].status = 'sorted';
+                    algorithmStates.push(clone(state));
+                } else {
+                    // Highlight bucket for sorting
+                    bucket.forEach(item => item.status = 'sorting');
+                    state.description = `Bucket ${b} contains ${bucket.length} elements. We sort these internally using Insertion Sort.`;
+                    algorithmStates.push(clone(state));
+
+                    // Sort the actual bucket array
+                    bucket.sort((a, bItem) => a.val - bItem.val);
+                    bucket.forEach(item => item.status = 'sorted');
+                    
+                    state.description = `Bucket ${b} is now internally sorted.`;
+                    algorithmStates.push(clone(state));
+                }
+            }
+
+            // Phase 3: Concatenation
+            state.phase = 'Concatenation Phase';
+            state.title = 'Ready for Concatenation';
+            state.description = 'All populated buckets are internally sorted. We now sequentially read from Bucket 0 to 9 to form the final array.';
+            algorithmStates.push(clone(state));
+
+            for(let b = 0; b < numBuckets; b++) {
+                let bucket = state.buckets[b];
+                for(let i = 0; i < bucket.length; i++) {
+                    let item = bucket[i];
+
+                    // Sub-step: Highlight item to move
+                    item.status = 'concatenating';
+                    state.title = `Extracting from Bucket ${b}`;
+                    state.description = `Taking ${item.val} from Bucket ${b} and appending it to the final array.`;
+                    algorithmStates.push(clone(state));
+
+                    // Sub-step: Move to final array
+                    item.status = 'moved'; // dims it in the bucket
+                    state.finalArray.push({ id: `final-${state.finalArray.length}`, val: item.val, status: 'done' });
+                    state.title = `Appended ${item.val}`;
+                    state.description = `${item.val} has been placed into its final sorted position.`;
+                    algorithmStates.push(clone(state));
+                }
+            }
+
+            // Final State
+            state.phase = 'Algorithm Complete';
+            state.title = 'Array Successfully Sorted!';
+            state.description = 'Bucket Sort is complete. Notice how we achieved sorting without globally comparing every element against each other. Time Complexity: O(n).';
+            algorithmStates.push(clone(state));
+        }
+
+
+        // ----------------------------------------------------------------------
+        // Step 2: Render a specific state to the DOM
+        // ----------------------------------------------------------------------
+        function renderState(index) {
+            const state = algorithmStates[index];
+            if (!state) return;
+
+            // 1. Update UI Text & Progress
+            elPhaseBadge.textContent = state.phase;
+            elStepTitle.innerHTML = state.title;
+            elStepDescription.innerHTML = state.description;
+            elStepCounter.textContent = `${index} / ${algorithmStates.length - 1}`;
+            
+            const progressPercent = (index / (algorithmStates.length - 1)) * 100;
+            elProgressBar.style.width = `${progressPercent}%`;
+
+            // Button states
+            btnPrev.disabled = index === 0;
+            btnNext.disabled = index === algorithmStates.length - 1;
+
+            // 2. Render Source Array
+            let sourceHTML = state.sourceArray.map(item => `
+                <div class="val-box flex items-center justify-center w-14 h-12 rounded-lg font-bold code-font text-sm status-${item.status}">
+                    ${item.val}
+                </div>
+            `).join('');
+            elSourceArray.innerHTML = sourceHTML;
+
+            // 3. Render Buckets
+            let bucketsHTML = state.buckets.map((bucket, bIdx) => {
+                // Determine bucket state for visual emphasis if it's currently active
+                let hasActive = bucket.some(i => ['inserted', 'sorting', 'concatenating'].includes(i.status));
+                let bucketBorderClass = hasActive ? 'border-indigo-400 bg-indigo-50/50' : 'border-slate-400 bg-slate-50/50';
+
+                // Render items inside bucket from bottom to top (flex-col-reverse)
+                let itemsHTML = bucket.map(item => `
+                    <div class="val-box w-full py-1.5 text-center rounded font-bold code-font text-xs mb-1 status-${item.status}">
+                        ${item.val}
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="flex flex-col items-center">
+                        <div class="bucket-container h-44 w-full flex flex-col-reverse p-1.5 overflow-hidden transition-colors duration-300" style="border-color: ${hasActive ? '#818cf8' : '#94a3b8'};">
+                            ${itemsHTML}
+                        </div>
+                        <div class="mt-2 text-sm font-bold ${hasActive ? 'text-indigo-600' : 'text-slate-500'} bg-white px-2 py-0.5 rounded shadow-sm border border-slate-200">
+                            B${bIdx}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            elBuckets.innerHTML = bucketsHTML;
+
+            // 4. Render Final Array
+            if (state.finalArray.length === 0) {
+                elFinalArray.innerHTML = `<div class="text-slate-400 italic text-sm py-2 px-4 flex items-center justify-center w-full h-full">Array will be constructed here...</div>`;
+            } else {
+                let finalHTML = state.finalArray.map(item => `
+                    <div class="val-box flex items-center justify-center w-14 h-12 rounded-lg font-bold code-font text-sm status-${item.status}">
+                        ${item.val}
+                    </div>
+                `).join('');
+                elFinalArray.innerHTML = finalHTML;
+            }
+        }
+
+        // ----------------------------------------------------------------------
+        // Step 3: Event Listeners and Initialization
+        // ----------------------------------------------------------------------
+        
+        function goNext() {
+            if (currentStateIndex < algorithmStates.length - 1) {
+                currentStateIndex++;
+                renderState(currentStateIndex);
+            }
+        }
+
+        function goPrev() {
+            if (currentStateIndex > 0) {
+                currentStateIndex--;
+                renderState(currentStateIndex);
+            }
+        }
+
+        function doReset() {
+            currentStateIndex = 0;
+            renderState(currentStateIndex);
+        }
+
+        btnNext.addEventListener('click', goNext);
+        btnPrev.addEventListener('click', goPrev);
+        btnReset.addEventListener('click', doReset);
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') goNext();
+            if (e.key === 'ArrowLeft') goPrev();
+        });
+
+        // Initialize App
+        generateAlgorithmStates();
+        renderState(0);
+
+    </script>
+</body>
+</html>

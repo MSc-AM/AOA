@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Floyd-Warshall Algorithm - Step-by-Step Visualization</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        
+        /* Smooth transitions for matrix cells */
+        .matrix-cell {
+            transition: background-color 0.3s ease, transform 0.2s ease, color 0.3s ease;
+        }
+        
+        /* State colors */
+        .bg-node-k { background-color: #d8b4fe; color: #4c1d95; } /* Purple for intermediate k */
+        .bg-node-i { background-color: #bfdbfe; color: #1e3a8a; } /* Blue for source i */
+        .bg-node-j { background-color: #fef08a; color: #854d0e; } /* Yellow for destination j */
+        
+        .bg-checking { background-color: #fef08a; } /* Yellow */
+        .bg-updated { background-color: #bbf7d0; color: #14532d; font-weight: bold; transform: scale(1.1); } /* Green */
+        .bg-component { background-color: #e0f2fe; } /* Light blue */
+        
+        /* Graph SVG styles */
+        .graph-node { transition: fill 0.3s, stroke 0.3s; stroke-width: 3px; }
+        .graph-edge { transition: stroke 0.3s, stroke-width 0.3s; }
+        
+        .svg-text { font-weight: bold; font-size: 14px; user-select: none; }
+        .edge-label { font-size: 13px; font-weight: bold; fill: #475569; }
+        .edge-label-bg { fill: white; fill-opacity: 0.8; }
+        
+        /* Table layout */
+        table { border-collapse: collapse; }
+        th, td { width: 60px; height: 60px; text-align: center; vertical-align: middle; font-size: 1.125rem; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-slate-800 mb-3">Floyd-Warshall Algorithm</h1>
+            <p class="text-xl text-slate-600">Comprehensive Study Notes & Step-by-Step Visualization</p>
+        </header>
+
+        <!-- Main Interactive Workspace -->
+        <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-6 mb-12">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                
+                <!-- Left Column: Graph & Controls -->
+                <div class="flex flex-col items-center">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-700">Problem Graph</h2>
+                    
+                    <!-- SVG Graph -->
+                    <div class="relative w-full max-w-[400px] aspect-square bg-slate-50 border border-slate-200 rounded-lg shadow-inner flex items-center justify-center p-4">
+                        <svg id="graph-svg" width="100%" height="100%" viewBox="0 0 400 400">
+                            <defs>
+                                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#64748b" />
+                                </marker>
+                                <marker id="arrowhead-active" markerWidth="10" markerHeight="7" refX="28" refY="3.5" orient="auto">
+                                    <polygon points="0 0, 10 3.5, 0 7" fill="#3b82f6" />
+                                </marker>
+                            </defs>
+                            
+                            <!-- Edges will be injected by JS -->
+                            <g id="edges-layer"></g>
+                            
+                            <!-- Nodes will be injected by JS -->
+                            <g id="nodes-layer"></g>
+                        </svg>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="mt-8 w-full bg-slate-50 p-5 rounded-lg border border-slate-200">
+                        <div class="flex flex-wrap justify-center gap-3 mb-4">
+                            <button id="btn-start" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md shadow transition">Start Algorithm</button>
+                            <button id="btn-prev" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-md shadow transition disabled:opacity-50" disabled>Previous Step</button>
+                            <button id="btn-next" class="px-5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-md shadow transition disabled:opacity-50" disabled>Next Step</button>
+                            <button id="btn-next-update" class="px-5 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-semibold rounded-md shadow transition disabled:opacity-50 border border-emerald-300" disabled>Skip to Next Update</button>
+                            <button id="btn-reset" class="px-5 py-2 bg-red-100 hover:bg-red-200 text-red-800 font-semibold rounded-md shadow transition border border-red-300">Reset</button>
+                        </div>
+                        
+                        <div class="w-full bg-slate-200 rounded-full h-2.5 mb-2">
+                            <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                        </div>
+                        <div class="text-center text-sm text-slate-500 font-medium" id="step-counter">Step 0 / 64</div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Matrix & Calculations -->
+                <div class="flex flex-col">
+                    <h2 class="text-2xl font-bold mb-4 text-slate-700">Distance Matrix <span id="matrix-iteration-title">D<sup>(0)</sup></span></h2>
+                    
+                    <div class="flex justify-center mb-6 overflow-x-auto">
+                        <table class="border-2 border-slate-400 bg-white shadow-sm" id="distance-matrix">
+                            <!-- Injected by JS -->
+                        </table>
+                    </div>
+
+                    <!-- Calculation Panel -->
+                    <div class="bg-slate-800 text-slate-100 p-6 rounded-lg shadow-md flex-grow">
+                        <h3 class="text-lg font-bold text-slate-300 border-b border-slate-600 pb-2 mb-4">Current Execution</h3>
+                        
+                        <div id="status-panel" class="space-y-4">
+                            <p id="status-message" class="text-lg italic text-slate-300">Click 'Start Algorithm' to begin the visualization.</p>
+                            
+                            <!-- Formula Display (Hidden initially) -->
+                            <div id="formula-container" class="hidden mt-4">
+                                <div class="flex items-center space-x-2 text-sm mb-2">
+                                    <span class="inline-block px-2 py-1 rounded bg-node-i text-blue-900 font-bold">i = <span id="val-i">-</span></span>
+                                    <span class="inline-block px-2 py-1 rounded bg-node-j text-yellow-900 font-bold">j = <span id="val-j">-</span></span>
+                                    <span class="inline-block px-2 py-1 rounded bg-node-k text-purple-900 font-bold">k = <span id="val-k">-</span></span>
+                                </div>
+                                
+                                <div class="bg-slate-900 p-4 rounded-md font-mono text-sm md:text-base border border-slate-700">
+                                    <div class="mb-2 text-slate-400">D<sup>(<span class="k-val">-</span>)</sup>[<span class="i-val text-blue-400">-</span>][<span class="j-val text-yellow-400">-</span>] = min( D<sup>(<span class="k-prev">-</span>)</sup>[<span class="i-val text-blue-400">-</span>][<span class="j-val text-yellow-400">-</span>] , D<sup>(<span class="k-prev">-</span>)</sup>[<span class="i-val text-blue-400">-</span>][<span class="k-val text-purple-400">-</span>] + D<sup>(<span class="k-prev">-</span>)</sup>[<span class="k-val text-purple-400">-</span>][<span class="j-val text-yellow-400">-</span>] )</div>
+                                    
+                                    <div class="flex items-center text-lg mt-3">
+                                        <span>D[<span class="i-val text-blue-400">-</span>][<span class="j-val text-yellow-400">-</span>] = min( </span>
+                                        <span id="calc-old" class="px-2 font-bold">-</span> ,
+                                        <span id="calc-ik" class="px-2 text-blue-300">-</span> + 
+                                        <span id="calc-kj" class="px-2 text-purple-300">-</span> 
+                                        <span> )</span>
+                                    </div>
+                                    
+                                    <div class="flex items-center text-lg mt-2">
+                                        <span class="invisible">D[<span class="i-val">-</span>][<span class="j-val">-</span>] </span>
+                                        <span>= min( <span id="calc-old-2" class="font-bold">-</span> , <span id="calc-sum" class="font-bold text-emerald-400">-</span> )</span>
+                                    </div>
+                                </div>
+                                
+                                <div id="update-result" class="mt-4 p-3 rounded-md text-lg font-bold border">
+                                    <!-- Result text injected by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Theory Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            
+            <!-- Concept Explanation -->
+            <div class="bg-white p-8 rounded-xl shadow border border-slate-200">
+                <h3 class="text-2xl font-bold text-slate-800 mb-4 border-b pb-2">1. Concept Overview</h3>
+                <p class="text-slate-600 mb-4 leading-relaxed">
+                    The Floyd-Warshall algorithm is a classic Dynamic Programming approach used to solve the 
+                    <strong>All-Pairs Shortest Path problem</strong>. It computes the shortest distance between every pair of vertices 
+                    in a weighted graph (which can be directed or undirected, with positive or negative edge weights, provided there are no negative weight cycles).
+                </p>
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">
+                    <h4 class="font-bold text-blue-800 mb-1">Key Definition: The Recurrence Relation</h4>
+                    <p class="text-sm text-blue-900 mb-2">
+                        The algorithm iteratively updates a distance matrix D. In each iteration k, it checks if routing a path through an intermediate vertex k yields a shorter distance than the currently known shortest path between vertices i and j:
+                    </p>
+                    <div class="font-mono text-center bg-white p-2 rounded shadow-sm text-sm overflow-x-auto">
+                        D<sup>(k)</sup>[i][j] = min( D<sup>(k-1)</sup>[i][j] , D<sup>(k-1)</sup>[i][k] + D<sup>(k-1)</sup>[k][j] )
+                    </div>
+                </div>
+                <p class="text-sm text-slate-500 italic">
+                    Meaning: The shortest path from i to j using only vertices from the subset {1, 2, ..., k} as intermediate points.
+                </p>
+            </div>
+
+            <!-- Complexity & Code -->
+            <div class="bg-white p-8 rounded-xl shadow border border-slate-200">
+                <h3 class="text-2xl font-bold text-slate-800 mb-4 border-b pb-2">2. Complexity Analysis</h3>
+                
+                <div class="mb-6">
+                    <h4 class="text-lg font-bold text-slate-700 mb-2">Time Complexity: <span class="text-purple-600 bg-purple-100 px-2 py-1 rounded">O(|V|³)</span></h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        The algorithm relies on three nested loops to systematically evaluate every possible path combination across the graph:
+                    </p>
+                    <ul class="list-disc list-inside text-sm text-slate-600 mt-2 space-y-1 ml-2">
+                        <li><strong>Outer loop (k):</strong> Iterates through intermediate vertices (|V| times).</li>
+                        <li><strong>Middle loop (i):</strong> Iterates through source vertices (|V| times).</li>
+                        <li><strong>Inner loop (j):</strong> Iterates through destination vertices (|V| times).</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-bold text-slate-700 mb-2">Space Complexity: <span class="text-blue-600 bg-blue-100 px-2 py-1 rounded">O(|V|²)</span></h4>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        The primary memory requirement is the 2D distance matrix used to store shortest path values. 
+                        A standard implementation updates distances in-place within a single |V| × |V| matrix to maximize memory efficiency.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // ---------------------------------------------------------
+        // 1. Data Definitions & Initialization
+        // ---------------------------------------------------------
+        const INF = Infinity;
+        const V = 4; // Number of vertices
+
+        // Graph node coordinates for SVG
+        const graphNodes = [
+            { id: 1, x: 100, y: 100 },
+            { id: 2, x: 300, y: 100 },
+            { id: 3, x: 100, y: 300 },
+            { id: 4, x: 300, y: 300 }
+        ];
+
+        // Graph edges mapping to the new example
+        const graphEdges = [
+            { from: 1, to: 2, weight: 3 },
+            { from: 2, to: 4, weight: 2 },
+            { from: 4, to: 3, weight: 1 },
+            { from: 3, to: 1, weight: 8 },
+            { from: 1, to: 4, weight: 7 },
+            { from: 4, to: 1, weight: 2 },
+            { from: 2, to: 3, weight: 5 }
+        ];
+
+        // Initial Adjacency Matrix D(0)
+        const initialMatrix = [
+            [0,   3,   INF, 7],
+            [INF, 0,   5,   2],
+            [8,   INF, 0,   INF],
+            [2,   INF, 1,   0]
+        ];
+
+        let states = []; // Array to hold every step's state
+        let currentStep = -1; // -1 means uninitialized
+        
+        // DOM Elements
+        const DOM = {
+            matrix: document.getElementById('distance-matrix'),
+            matrixTitle: document.getElementById('matrix-iteration-title'),
+            nodesLayer: document.getElementById('nodes-layer'),
+            edgesLayer: document.getElementById('edges-layer'),
+            btnStart: document.getElementById('btn-start'),
+            btnPrev: document.getElementById('btn-prev'),
+            btnNext: document.getElementById('btn-next'),
+            btnNextUpdate: document.getElementById('btn-next-update'),
+            btnReset: document.getElementById('btn-reset'),
+            progressBar: document.getElementById('progress-bar'),
+            stepCounter: document.getElementById('step-counter'),
+            statusMessage: document.getElementById('status-message'),
+            formulaContainer: document.getElementById('formula-container'),
+            updateResult: document.getElementById('update-result'),
+            // Formula elements
+            valI: document.getElementById('val-i'),
+            valJ: document.getElementById('val-j'),
+            valK: document.getElementById('val-k'),
+            calcOld: document.getElementById('calc-old'),
+            calcIk: document.getElementById('calc-ik'),
+            calcKj: document.getElementById('calc-kj'),
+            calcOld2: document.getElementById('calc-old-2'),
+            calcSum: document.getElementById('calc-sum'),
+            elsKVal: document.querySelectorAll('.k-val'),
+            elsKPrev: document.querySelectorAll('.k-prev'),
+            elsIVal: document.querySelectorAll('.i-val'),
+            elsJVal: document.querySelectorAll('.j-val')
+        };
+
+        // ---------------------------------------------------------
+        // 2. Algorithm Simulation & State Generation
+        // ---------------------------------------------------------
+        function deepCopy(matrix) {
+            return matrix.map(row => [...row]);
+        }
+
+        function formatInf(val) {
+            return val === INF ? '∞' : val;
+        }
+
+        function generateStates() {
+            states = [];
+            let currentDist = deepCopy(initialMatrix);
+            
+            // State 0: Initial State
+            states.push({
+                type: 'initial',
+                matrix: deepCopy(currentDist),
+                msg: "Initial Distance Matrix D(0) is loaded using direct edge weights. Paths without direct edges are assigned ∞."
+            });
+
+            // Run Floyd-Warshall and record states
+            for (let k = 0; k < V; k++) {
+                for (let i = 0; i < V; i++) {
+                    for (let j = 0; j < V; j++) {
+                        
+                        let oldVal = currentDist[i][j];
+                        let distIK = currentDist[i][k];
+                        let distKJ = currentDist[k][j];
+                        let sum = (distIK === INF || distKJ === INF) ? INF : distIK + distKJ;
+                        let isUpdate = sum < oldVal;
+                        
+                        // We push the state BEFORE the update
+                        states.push({
+                            type: 'check',
+                            k: k,
+                            i: i,
+                            j: j,
+                            oldVal: oldVal,
+                            distIK: distIK,
+                            distKJ: distKJ,
+                            sum: sum,
+                            isUpdate: isUpdate,
+                            matrix: deepCopy(currentDist), // Matrix before update
+                            msg: `Checking if path ${i+1} → ${k+1} → ${j+1} is shorter than current path ${i+1} → ${j+1}.`
+                        });
+
+                        if (isUpdate) {
+                            currentDist[i][j] = sum;
+                        }
+                    }
+                }
+            }
+
+            // Final State
+            states.push({
+                type: 'final',
+                matrix: deepCopy(currentDist),
+                msg: "Algorithm Complete! The matrix D(4) now contains the All-Pairs Shortest Paths."
+            });
+        }
+
+        // ---------------------------------------------------------
+        // 3. SVG Graph Rendering
+        // ---------------------------------------------------------
+        function drawGraph() {
+            // Clear layers
+            DOM.edgesLayer.innerHTML = '';
+            DOM.nodesLayer.innerHTML = '';
+
+            // Draw Edges
+            graphEdges.forEach((edge, index) => {
+                const fromNode = graphNodes.find(n => n.id === edge.from);
+                const toNode = graphNodes.find(n => n.id === edge.to);
+                
+                // Calculate distance to determine the normal vector
+                let dx = toNode.x - fromNode.x;
+                let dy = toNode.y - fromNode.y;
+                let d = Math.sqrt(dx*dx + dy*dy);
+                
+                // Calculate normal vector (perpendicular to the straight line)
+                let nx = -dy / d;
+                let ny = dx / d;
+                
+                // Offset for the bezier curve control point (creates the bow effect)
+                let curveOffset = 30;
+                
+                // Calculate control point (cx, cy)
+                let midX = (fromNode.x + toNode.x) / 2;
+                let midY = (fromNode.y + toNode.y) / 2;
+                let cx = midX + nx * curveOffset;
+                let cy = midY + ny * curveOffset;
+
+                // Account for node radius so edges touch the border, not the center
+                const r = 25;
+                let angleStart = Math.atan2(cy - fromNode.y, cx - fromNode.x);
+                let angleEnd = Math.atan2(toNode.y - cy, toNode.x - cx);
+
+                let startX = fromNode.x + r * Math.cos(angleStart);
+                let startY = fromNode.y + r * Math.sin(angleStart);
+                let endX = toNode.x - r * Math.cos(angleEnd);
+                let endY = toNode.y - r * Math.sin(angleEnd);
+
+                // Create SVG Path instead of a straight Line
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute("d", `M ${startX} ${startY} Q ${cx} ${cy} ${endX} ${endY}`);
+                path.setAttribute("fill", "none");
+                path.setAttribute("stroke", "#94a3b8"); // slate-400
+                path.setAttribute("stroke-width", "2");
+                path.setAttribute("marker-end", "url(#arrowhead)");
+                path.id = `edge-${edge.from}-${edge.to}`;
+                path.classList.add("graph-edge");
+                
+                // Text position (Evaluating quadratic bezier at t=0.5 gives the peak of the curve)
+                let textX = 0.25 * startX + 0.5 * cx + 0.25 * endX;
+                let textY = 0.25 * startY + 0.5 * cy + 0.25 * endY;
+
+                // Text Background
+                const textBg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                textBg.setAttribute("x", textX - 10);
+                textBg.setAttribute("y", textY - 10);
+                textBg.setAttribute("width", "20");
+                textBg.setAttribute("height", "20");
+                textBg.setAttribute("rx", "10");
+                textBg.classList.add("edge-label-bg");
+
+                // Text
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", textX);
+                text.setAttribute("y", textY);
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("alignment-baseline", "central");
+                text.textContent = edge.weight;
+                text.classList.add("edge-label");
+                
+                DOM.edgesLayer.appendChild(path);
+                DOM.edgesLayer.appendChild(textBg);
+                DOM.edgesLayer.appendChild(text);
+            });
+
+            // Draw Nodes
+            graphNodes.forEach(node => {
+                const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                g.id = `node-${node.id}`;
+                
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", node.x);
+                circle.setAttribute("cy", node.y);
+                circle.setAttribute("r", "25");
+                circle.setAttribute("fill", "#e2e8f0"); // slate-200
+                circle.setAttribute("stroke", "#64748b"); // slate-500
+                circle.classList.add("graph-node");
+                
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", node.x);
+                text.setAttribute("y", node.y);
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("alignment-baseline", "central");
+                text.setAttribute("fill", "#1e293b");
+                text.textContent = node.id;
+                text.classList.add("svg-text", "text-lg");
+                
+                g.appendChild(circle);
+                g.appendChild(text);
+                DOM.nodesLayer.appendChild(g);
+            });
+        }
+
+        function resetGraphHighlights() {
+            document.querySelectorAll('.graph-node').forEach(c => {
+                c.setAttribute("fill", "#e2e8f0");
+                c.setAttribute("stroke", "#64748b");
+            });
+            document.querySelectorAll('.graph-edge').forEach(l => {
+                l.setAttribute("stroke", "#94a3b8");
+                l.setAttribute("stroke-width", "2");
+                l.setAttribute("marker-end", "url(#arrowhead)");
+            });
+        }
+
+        function highlightNode(id, role) {
+            const g = document.getElementById(`node-${id}`);
+            if(!g) return;
+            const circle = g.querySelector('circle');
+            
+            if (role === 'k') {
+                circle.setAttribute("fill", "#f3e8ff"); // purple-100
+                circle.setAttribute("stroke", "#a855f7"); // purple-500
+            } else if (role === 'i') {
+                circle.setAttribute("fill", "#dbeafe"); // blue-100
+                circle.setAttribute("stroke", "#3b82f6"); // blue-500
+            } else if (role === 'j') {
+                circle.setAttribute("fill", "#fef9c3"); // yellow-100
+                circle.setAttribute("stroke", "#eab308"); // yellow-500
+            }
+        }
+
+        // ---------------------------------------------------------
+        // 4. Matrix Rendering
+        // ---------------------------------------------------------
+        function renderMatrix(state) {
+            let html = `
+                <thead>
+                    <tr>
+                        <th class="border border-slate-300 bg-slate-100"></th>
+                        ${Array.from({length: V}, (_, i) => `<th class="border border-slate-300 bg-slate-100 text-slate-700">V${i+1}</th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            for (let r = 0; r < V; r++) {
+                html += `<tr><th class="border border-slate-300 bg-slate-100 text-slate-700">V${r+1}</th>`;
+                for (let c = 0; c < V; c++) {
+                    let val = formatInf(state.matrix[r][c]);
+                    let cellId = `cell-${r}-${c}`;
+                    let classes = "matrix-cell border border-slate-300 ";
+                    let textClass = val === '∞' ? 'text-slate-400 font-bold text-2xl' : 'text-slate-800';
+                    
+                    // Highlight classes
+                    if (state.type === 'check') {
+                        if (r === state.i && c === state.j) {
+                            classes += state.isUpdate ? "bg-updated " : "bg-checking ";
+                            if (state.isUpdate) val = formatInf(state.sum); // Show updated value
+                        } else if (r === state.i && c === state.k) {
+                            classes += "bg-component font-bold text-blue-800 ";
+                        } else if (r === state.k && c === state.j) {
+                            classes += "bg-component font-bold text-purple-800 ";
+                        }
+                    }
+
+                    html += `<td id="${cellId}" class="${classes} ${textClass}">${val}</td>`;
+                }
+                html += `</tr>`;
+            }
+            html += `</tbody>`;
+            DOM.matrix.innerHTML = html;
+        }
+
+        // ---------------------------------------------------------
+        // 5. State Renderer (Main View Update)
+        // ---------------------------------------------------------
+        function renderStep(index) {
+            const state = states[index];
+            
+            // Progress Update
+            let progress = (index / (states.length - 1)) * 100;
+            DOM.progressBar.style.width = `${progress}%`;
+            DOM.stepCounter.textContent = `Step ${index} / ${states.length - 1}`;
+
+            // Reset UI
+            resetGraphHighlights();
+            DOM.formulaContainer.classList.add('hidden');
+            
+            // Title logic
+            if (state.type === 'initial') {
+                DOM.matrixTitle.innerHTML = `D<sup>(0)</sup>`;
+                DOM.statusMessage.innerHTML = state.msg;
+            } else if (state.type === 'final') {
+                DOM.matrixTitle.innerHTML = `D<sup>(4)</sup> (Final Result)`;
+                DOM.statusMessage.innerHTML = state.msg;
+            } else if (state.type === 'check') {
+                DOM.matrixTitle.innerHTML = `D<sup>(${state.k+1})</sup> <span class="text-sm font-normal text-slate-500">(Processing k=${state.k+1})</span>`;
+                DOM.statusMessage.innerHTML = state.msg;
+                
+                // Show formula
+                DOM.formulaContainer.classList.remove('hidden');
+                
+                // Update Graph highlights
+                highlightNode(state.k + 1, 'k');
+                highlightNode(state.i + 1, 'i');
+                highlightNode(state.j + 1, 'j');
+
+                // Fill Formula Values (Using 1-based indexing for display)
+                let UI_i = state.i + 1;
+                let UI_j = state.j + 1;
+                let UI_k = state.k + 1;
+
+                DOM.valI.textContent = UI_i;
+                DOM.valJ.textContent = UI_j;
+                DOM.valK.textContent = UI_k;
+
+                DOM.elsKVal.forEach(el => el.textContent = UI_k);
+                DOM.elsKPrev.forEach(el => el.textContent = state.k);
+                DOM.elsIVal.forEach(el => el.textContent = UI_i);
+                DOM.elsJVal.forEach(el => el.textContent = UI_j);
+
+                DOM.calcOld.textContent = formatInf(state.oldVal);
+                DOM.calcIk.textContent = formatInf(state.distIK);
+                DOM.calcKj.textContent = formatInf(state.distKJ);
+                
+                DOM.calcOld2.textContent = formatInf(state.oldVal);
+                DOM.calcSum.textContent = formatInf(state.sum);
+
+                // Update Result Box
+                DOM.updateResult.className = `mt-4 p-3 rounded-md text-lg font-bold border ${state.isUpdate ? 'bg-emerald-900 border-emerald-500 text-emerald-100' : 'bg-slate-700 border-slate-600 text-slate-300'}`;
+                
+                if (state.isUpdate) {
+                    DOM.updateResult.innerHTML = `<span class="text-2xl mr-2">✓</span> Shorter path found! Updated value from <span class="line-through opacity-75">${formatInf(state.oldVal)}</span> to <span class="text-emerald-300">${formatInf(state.sum)}</span>.`;
+                } else if (state.i === state.j) {
+                    DOM.updateResult.innerHTML = `Distance to self is always 0.`;
+                } else {
+                    DOM.updateResult.innerHTML = `No shorter path found. Keeping existing value ${formatInf(state.oldVal)}.`;
+                }
+            }
+
+            // Render Matrix with highlights
+            renderMatrix(state);
+
+            // Update Buttons
+            DOM.btnPrev.disabled = index === 0;
+            DOM.btnNext.disabled = index === states.length - 1;
+            DOM.btnNextUpdate.disabled = index === states.length - 1;
+        }
+
+        // ---------------------------------------------------------
+        // 6. Event Listeners & Controls
+        // ---------------------------------------------------------
+        DOM.btnStart.addEventListener('click', () => {
+            currentStep = 0;
+            DOM.btnStart.classList.add('hidden');
+            renderStep(currentStep);
+        });
+
+        DOM.btnPrev.addEventListener('click', () => {
+            if (currentStep > 0) {
+                currentStep--;
+                renderStep(currentStep);
+            }
+        });
+
+        DOM.btnNext.addEventListener('click', () => {
+            if (currentStep < states.length - 1) {
+                currentStep++;
+                renderStep(currentStep);
+            }
+        });
+
+        DOM.btnNextUpdate.addEventListener('click', () => {
+            let nextIndex = currentStep + 1;
+            while (nextIndex < states.length - 1 && !states[nextIndex].isUpdate) {
+                nextIndex++;
+            }
+            if(nextIndex < states.length) {
+                currentStep = nextIndex;
+                renderStep(currentStep);
+            }
+        });
+
+        DOM.btnReset.addEventListener('click', () => {
+            currentStep = 0;
+            DOM.btnStart.classList.remove('hidden');
+            renderStep(currentStep);
+            DOM.statusMessage.innerHTML = "Algorithm reset. Click 'Start Algorithm' to begin.";
+            DOM.formulaContainer.classList.add('hidden');
+        });
+
+        // ---------------------------------------------------------
+        // 7. Initialization
+        // ---------------------------------------------------------
+        function init() {
+            generateStates();
+            drawGraph();
+            
+            // Render initial state without full visualization active
+            renderMatrix(states[0]);
+            DOM.matrixTitle.innerHTML = `D<sup>(0)</sup>`;
+        }
+
+        // Boot
+        init();
+
+    </script>
+</body>
+</html>

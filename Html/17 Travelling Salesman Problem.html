@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TSP Educational Tool</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- MathJax for rendering Mathematical equations from the PDF -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        .tab-btn {
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-btn.active {
+            border-bottom: 2px solid #2563eb;
+            color: #2563eb;
+            font-weight: 600;
+        }
+        canvas {
+            background-color: #ffffff;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            cursor: default;
+        }
+        .matrix-cell {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e2e8f0;
+        }
+        .matrix-header {
+            background-color: #f1f5f9;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- Header -->
+    <header class="bg-blue-900 text-white py-6 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h1 class="text-3xl font-bold">Traveling Salesman Problem (TSP)</h1>
+            <p class="mt-2 text-blue-200 text-lg">Interactive Study Notes & Algorithm Visualization (5-City Example)</p>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        
+        <!-- Navigation Tabs -->
+        <nav class="flex space-x-8 border-b border-gray-300 mb-8 overflow-x-auto whitespace-nowrap" id="tabs">
+            <button class="tab-btn active pb-3 text-lg" onclick="switchTab('intro')">1. Introduction</button>
+            <button class="tab-btn pb-3 text-lg" onclick="switchTab('greedy')">2. Greedy Approach</button>
+            <button class="tab-btn pb-3 text-lg" onclick="switchTab('brute')">3. Brute Force</button>
+            <button class="tab-btn pb-3 text-lg" onclick="switchTab('complexity')">4. Complexity</button>
+        </nav>
+
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-6">
+            
+            <!-- Left Panel: Content / Explanations -->
+            <div class="xl:col-span-4 space-y-6" id="content-panel">
+                <!-- Content injected dynamically via JavaScript -->
+            </div>
+
+            <!-- Right Panel: Visualization & Controls -->
+            <div class="xl:col-span-8 flex flex-col items-center sticky top-8" id="visualization-panel">
+                
+                <!-- Educational Dashboard / Current Status -->
+                <div class="w-full bg-white rounded-xl shadow-md p-6 border border-gray-100 mb-6">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+                        <h2 class="text-xl font-bold text-gray-800" id="viz-title">Algorithm Visualization</h2>
+                        <span class="bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full" id="viz-cost">Cost: 0</span>
+                    </div>
+                    <p class="text-gray-600 mb-4 h-12" id="viz-step-desc">Select an algorithm tab to begin interactive learning.</p>
+                    
+                    <!-- Controls -->
+                    <div class="flex space-x-3 mt-4" id="viz-controls">
+                        <button onclick="vizController.reset()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded font-medium transition">Reset</button>
+                        <button onclick="vizController.prevStep()" id="btn-prev" class="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-800 rounded font-medium transition disabled:opacity-50">Previous Step</button>
+                        <button onclick="vizController.nextStep()" id="btn-next" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium shadow transition disabled:opacity-50">Next Step</button>
+                    </div>
+                </div>
+
+                <!-- Canvas and Matrix Side-by-Side -->
+                <div class="w-full flex flex-col lg:flex-row gap-6 items-center lg:items-start justify-center">
+                    <!-- Canvas Graph Container -->
+                    <div class="bg-white rounded-xl shadow border border-gray-100 p-2 flex justify-center w-full lg:w-auto overflow-hidden">
+                        <canvas id="graphCanvas" width="500" height="400" class="max-w-full"></canvas>
+                    </div>
+
+                    <!-- Adjacency Matrix Display -->
+                    <div class="bg-white p-4 rounded-xl shadow border border-gray-100 flex flex-col items-center flex-shrink-0 w-full lg:w-auto">
+                        <h3 class="font-bold text-gray-800 mb-4 text-center">Cost (Adjacency) Matrix</h3>
+                        <div id="matrix-container" class="overflow-x-auto w-full flex justify-center">
+                            <!-- Matrix built by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- DATA & CONFIGURATION (New 5-Node Asymmetric Example) ---
+        // Carefully constructed to have a deceiving greedy trap and a hidden optimal path.
+        const costMatrix = [
+            [ 0, 10, 20, 15, 25], // From 1
+            [12,  0, 10, 18, 22], // From 2
+            [25,  8,  0, 20, 15], // From 3
+            [30, 16, 25,  0,  5], // From 4
+            [22, 14,  5, 20,  0]  // From 5
+        ];
+
+        // Nodes config for the canvas drawing (arranged in a pentagon)
+        const nodes = [
+            { id: 1, label: '1 (S)', x: 250, y: 50  },
+            { id: 2, label: '2',     x: 410, y: 140 },
+            { id: 3, label: '3',     x: 350, y: 330 },
+            { id: 4, label: '4',     x: 150, y: 330 },
+            { id: 5, label: '5',     x:  90, y: 140 }
+        ];
+
+        // --- CONTENT TEMPLATES ---
+        const contents = {
+            'intro': `
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                    <h2 class="text-2xl font-bold mb-4 text-blue-900">1. Introduction to the Problem</h2>
+                    <p class="mb-4"><strong>Definition:</strong> The Traveling Salesman Problem (TSP) is a classical algorithmic problem. A salesman is given a list of N cities and the travel costs (or distances/times) between each pair of cities.</p>
+                    <p class="mb-4"><strong>Objective:</strong> Starting from a given city, visit every other city exactly once and return to the starting city, while ensuring the total travel cost is minimized.</p>
+                    <div class="bg-gray-50 p-4 border-l-4 border-blue-500 rounded text-sm italic mb-6">
+                        <strong>Real-World Analogy:</strong> Imagine a marketing representative who needs to travel to different cities to promote a product. To maximize profit and efficiency, they must plan a continuous tour that minimizes transportation expenses and time before returning home.
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-blue-900 mt-6">2. Graph Representation & Properties</h3>
+                    <p class="mb-2">The problem is mathematically modeled using a Graph \\(G=(V,E)\\):</p>
+                    <ul class="list-disc pl-6 space-y-2 mb-4">
+                        <li><strong>Vertices (V):</strong> Represents the cities \\((1,2,3,...,N)\\)</li>
+                        <li><strong>Edges (E):</strong> Represents the paths connecting the cities.</li>
+                        <li><strong>Cost Matrix (C):</strong> \\(C_{ij}\\) represents the cost (weight) to travel from city i to city j.</li>
+                    </ul>
+                    <h4 class="font-bold mt-4">2.1. Symmetric vs. Asymmetric TSP</h4>
+                    <p class="mb-2"><strong>Symmetric Graph:</strong> The cost to travel from city A to B is the same as returning from B to A \\((C_{ij}=C_{ji})\\).</p>
+                    <p><strong>Asymmetric Graph:</strong> The cost is different \\((C_{ij}\\ne C_{ji})\\). For example, traveling uphill may consume more fuel than the downhill return journey. <em>Our 5-city example is Asymmetric.</em></p>
+                </div>
+            `,
+            'greedy': `
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                    <h2 class="text-2xl font-bold mb-4 text-blue-900">4.1. The Greedy Approach</h2>
+                    <p class="mb-4">The Greedy strategy tells the salesman to <strong>always travel to the nearest unvisited city</strong> from their current location.</p>
+                    
+                    <h3 class="text-lg font-bold mb-2">Algorithm Walkthrough:</h3>
+                    <div class="bg-blue-50 p-4 rounded-lg text-sm font-mono leading-relaxed">
+                        <p>1. Start at City 1.</p>
+                        <p>2. Find minimum cost path to unvisited city.</p>
+                        <p>3. Move to that city, mark as visited.</p>
+                        <p>4. Repeat until all cities visited.</p>
+                        <p>5. Return to start city.</p>
+                    </div>
+
+                    <p class="mt-4 text-sm text-gray-700"><strong>Note:</strong> While the greedy approach is fast and intuitive, it fails to guarantee the optimal minimum cost. In this specific 5-node example, taking the obvious early local choices forces the salesman into a highly penalized route later.</p>
+                    
+                    <div class="mt-6">
+                        <p class="font-semibold text-blue-700">👉 Use the controls on the right to step through the Greedy trace visually and see the trap!</p>
+                    </div>
+                </div>
+            `,
+            'brute': `
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                    <h2 class="text-2xl font-bold mb-4 text-blue-900">4.2. The Brute Force Approach</h2>
+                    <p class="mb-4">Brute force involves listing out <strong>every possible permutation</strong> of paths, evaluating the cost of each, and manually picking the minimum.</p>
+                    <p class="mb-4">For our 5-city example, starting at City 1, there are \\((5-1)! = 4! = 24\\) possible paths.</p>
+                    
+                    <p class="text-sm italic mb-2">Showing selected paths out of the 24 permutations:</p>
+                    <div class="overflow-x-auto mb-4">
+                        <table class="w-full text-sm text-left text-gray-500">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                <tr>
+                                    <th class="px-4 py-2">Path Permutation</th>
+                                    <th class="px-4 py-2">Cost Calculation</th>
+                                    <th class="px-4 py-2">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-red-50 border-b"><td class="px-4 py-2">1 &rarr; 2 &rarr; 3 &rarr; 5 &rarr; 4 &rarr; 1</td><td class="px-4 py-2">10 + 10 + 15 + 20 + 30</td><td class="px-4 py-2">85 (Greedy Trap)</td></tr>
+                                <tr class="bg-white border-b"><td class="px-4 py-2">1 &rarr; 2 &rarr; 4 &rarr; 5 &rarr; 3 &rarr; 1</td><td class="px-4 py-2">10 + 18 + 5 + 5 + 25</td><td class="px-4 py-2">63</td></tr>
+                                <tr class="bg-white border-b"><td class="px-4 py-2">1 &rarr; 3 &rarr; 2 &rarr; 4 &rarr; 5 &rarr; 1</td><td class="px-4 py-2">20 + 8 + 18 + 5 + 22</td><td class="px-4 py-2">73</td></tr>
+                                <tr class="bg-green-50 border-b font-bold text-green-700"><td class="px-4 py-2">1 &rarr; 4 &rarr; 5 &rarr; 3 &rarr; 2 &rarr; 1</td><td class="px-4 py-2">15 + 5 + 5 + 8 + 12</td><td class="px-4 py-2">45 (Optimal)</td></tr>
+                                <tr class="bg-white border-b"><td class="px-4 py-2">1 &rarr; 5 &rarr; 4 &rarr; 3 &rarr; 2 &rarr; 1</td><td class="px-4 py-2">25 + 20 + 25 + 8 + 12</td><td class="px-4 py-2">90</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <ul class="list-disc pl-6 space-y-2 mt-4 text-sm text-gray-700">
+                        <li><strong>Time Complexity:</strong> \\(\\mathcal{O}(N!)\\)</li>
+                        <li><strong>Drawback:</strong> Exponential Time Complexity. If N becomes moderately large, calculating permutations becomes computationally impossible.</li>
+                    </ul>
+                </div>
+            `,
+            'complexity': `
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                    <h2 class="text-2xl font-bold mb-4 text-blue-900">4. Core Complexity & Characteristics</h2>
+                    <p class="text-lg font-semibold mb-4 text-gray-700">Why is TSP so important in Computer Science?</p>
+                    
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h3 class="font-bold text-blue-800">1. Hamiltonian Cycle Connection</h3>
+                            <p class="text-sm mt-1">TSP is an extension of the Hamiltonian Cycle problem. A Hamiltonian Cycle visits every node in a graph exactly once. TSP is effectively asking to find the minimum-weight Hamiltonian Cycle.</p>
+                        </div>
+                        <div class="bg-red-50 p-4 rounded-lg">
+                            <h3 class="font-bold text-red-800">2. NP-Complete Status</h3>
+                            <p class="text-sm mt-1">Because of the exponential complexity tied to generating paths (\\(\\mathcal{O}(N^{2}\\cdot2^{N})\\) in DP), TSP is classified as an <strong>NP-Complete Problem</strong>. No known algorithm can solve TSP in polynomial time for general cases.</p>
+                        </div>
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h3 class="font-bold text-green-800">3. Practicality vs. Optimality</h3>
+                            <p class="text-sm mt-1">In the real world, since finding the absolute optimum via DP is too slow for thousands of cities, engineers rely on <strong>Heuristic and Approximation Algorithms</strong> to get "good enough" paths rather than perfectly optimal ones.</p>
+                        </div>
+                    </div>
+                </div>
+            `
+        };
+
+        // --- ALGORITHM STEPS DEFINITION (Updated for 5 nodes) ---
+        const algoSteps = {
+            'intro': [{ desc: "View the 5 graph nodes and the full connectivity between cities. Proceed to algorithm tabs to see step-by-step executions.", paths: [], activeNode: null }],
+            'complexity': [{ desc: "Graph representation of the Travelling Salesman Problem.", paths: [], activeNode: null }],
+            
+            'greedy': [
+                { desc: "<strong>Step 1:</strong> Start at City 1 (S). Total Cost: 0.", path: [1], highlightEdge: null, cost: 0, activeNode: 1 },
+                { desc: "<strong>Step 2:</strong> From 1, available unvisited are 2 (cost 10), 3 (20), 4 (15), 5 (25). Minimum is City 2. Move to 2.", path: [1, 2], highlightEdge: [1, 2], cost: 10, activeNode: 2 },
+                { desc: "<strong>Step 3:</strong> From 2, available unvisited are 3 (cost 10), 4 (18), 5 (22). Minimum is City 3. Move to 3.", path: [1, 2, 3], highlightEdge: [2, 3], cost: 20, activeNode: 3 },
+                { desc: "<strong>Step 4:</strong> From 3, available unvisited are 4 (cost 20), 5 (cost 15). Minimum is City 5. Move to 5.", path: [1, 2, 3, 5], highlightEdge: [3, 5], cost: 35, activeNode: 5 },
+                { desc: "<strong>Step 5:</strong> From 5, the only unvisited city is 4 (cost 20). Move to 4.", path: [1, 2, 3, 5, 4], highlightEdge: [5, 4], cost: 55, activeNode: 4 },
+                { desc: "<strong>Step 6:</strong> All cities visited. Return from 4 to start, City 1. Cost is a massive 30!<br><strong>Total Greedy Cost: 85</strong>.", path: [1, 2, 3, 5, 4, 1], highlightEdge: [4, 1], cost: 85, activeNode: 1 }
+            ],
+
+            'brute': [
+                { desc: "<strong>Permutation 1:</strong> Evaluate 1 &rarr; 2 &rarr; 3 &rarr; 5 &rarr; 4 &rarr; 1 (Our Greedy route).<br>Cost: 10 + 10 + 15 + 20 + 30 = 85. Current Best: 85.", path: [1, 2, 3, 5, 4, 1], highlightEdge: null, cost: 85, isBest: true },
+                { desc: "<strong>Permutation 2:</strong> Evaluate 1 &rarr; 2 &rarr; 4 &rarr; 5 &rarr; 3 &rarr; 1.<br>Cost: 10 + 18 + 5 + 5 + 25 = 63. <strong>New Best Found: 63!</strong>", path: [1, 2, 4, 5, 3, 1], highlightEdge: null, cost: 63, isBest: true },
+                { desc: "<strong>Permutation 3:</strong> Evaluate 1 &rarr; 3 &rarr; 2 &rarr; 4 &rarr; 5 &rarr; 1.<br>Cost: 20 + 8 + 18 + 5 + 22 = 73. Current Best: 63.", path: [1, 3, 2, 4, 5, 1], highlightEdge: null, cost: 73, isBest: false },
+                { desc: "<strong>Permutation 4:</strong> Evaluate 1 &rarr; 4 &rarr; 5 &rarr; 3 &rarr; 2 &rarr; 1.<br>Cost: 15 + 5 + 5 + 8 + 12 = 45. <strong>New Optimal Found!</strong>", path: [1, 4, 5, 3, 2, 1], highlightEdge: null, cost: 45, isBest: true, isOptimal: true },
+                { desc: "<strong>Permutation 5:</strong> Evaluate 1 &rarr; 5 &rarr; 4 &rarr; 3 &rarr; 2 &rarr; 1.<br>Cost: 25 + 20 + 25 + 8 + 12 = 90. Current Best: 45.", path: [1, 5, 4, 3, 2, 1], highlightEdge: null, cost: 90, isBest: false },
+                { desc: "<strong>Conclusion:</strong> After evaluating all 24 permutations, we verified the optimal minimum route.<br><strong>Optimal Cost Confirmed: 45.</strong>", path: [1, 4, 5, 3, 2, 1], highlightEdge: null, cost: 45, finalOptimal: [1, 4, 5, 3, 2, 1] }
+            ]
+        };
+
+        // --- APPLICATION LOGIC ---
+        class VisualizerController {
+            constructor() {
+                this.currentTab = 'intro';
+                this.stepIndex = 0;
+                this.canvas = document.getElementById('graphCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                
+                this.initMatrix();
+                this.draw();
+            }
+
+            setTab(tab) {
+                this.currentTab = tab;
+                this.stepIndex = 0;
+                this.updateUI();
+                this.draw();
+            }
+
+            nextStep() {
+                if (this.stepIndex < algoSteps[this.currentTab].length - 1) {
+                    this.stepIndex++;
+                    this.updateUI();
+                    this.draw();
+                }
+            }
+
+            prevStep() {
+                if (this.stepIndex > 0) {
+                    this.stepIndex--;
+                    this.updateUI();
+                    this.draw();
+                }
+            }
+
+            reset() {
+                this.stepIndex = 0;
+                this.updateUI();
+                this.draw();
+            }
+
+            updateUI() {
+                const steps = algoSteps[this.currentTab];
+                if (!steps || steps.length === 0) {
+                    document.getElementById('viz-controls').style.display = 'none';
+                    document.getElementById('viz-step-desc').innerHTML = "Select an algorithm to begin visualization.";
+                    document.getElementById('viz-title').innerText = "Overview";
+                    document.getElementById('viz-cost').innerText = "Cost: -";
+                    return;
+                }
+
+                document.getElementById('viz-controls').style.display = 'flex';
+                
+                // Titles and text
+                const titles = {
+                    'greedy': 'Greedy Algorithm (5-City)',
+                    'brute': 'Brute Force Evaluation (5-City)'
+                };
+                document.getElementById('viz-title').innerText = titles[this.currentTab] || "Visualization";
+                
+                const currentData = steps[this.stepIndex];
+                document.getElementById('viz-step-desc').innerHTML = currentData.desc;
+                
+                // Cost display
+                const costDisplay = document.getElementById('viz-cost');
+                if (currentData.cost !== undefined && currentData.cost > 0) {
+                    costDisplay.innerText = `Cost: ${currentData.cost}`;
+                    costDisplay.className = currentData.isOptimal ? 
+                        "bg-green-100 text-green-800 text-sm font-semibold px-3 py-1 rounded-full shadow" : 
+                        "bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full";
+                } else {
+                    costDisplay.innerText = `Cost: 0`;
+                    costDisplay.className = "bg-blue-100 text-blue-800 text-sm font-semibold px-3 py-1 rounded-full";
+                }
+
+                // Buttons state
+                document.getElementById('btn-prev').disabled = this.stepIndex === 0;
+                document.getElementById('btn-next').disabled = this.stepIndex === steps.length - 1;
+            }
+
+            // --- CANVAS DRAWING METHODS ---
+            
+            draw() {
+                const ctx = this.ctx;
+                ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                const currentData = algoSteps[this.currentTab] ? algoSteps[this.currentTab][this.stepIndex] : null;
+
+                // Draw background/faint edges for all connections
+                this.drawAllBackgroundEdges();
+
+                if (currentData) {
+                    // Draw DP Specific Edges
+                    if (currentData.dpEdges) {
+                        currentData.dpEdges.forEach(edge => {
+                            this.drawEdge(edge[0], edge[1], '#a855f7', 3, true); // Purple for DP evaluation
+                        });
+                    }
+
+                    // Draw Final optimal path from brute force
+                    if (currentData.finalOptimal) {
+                        this.drawPath(currentData.finalOptimal, '#10b981', 4); // Green optimal
+                    }
+                    
+                    // Draw main active path
+                    if (currentData.path && currentData.path.length > 0) {
+                        let pathColor = '#2563eb'; // Blue default
+                        if (currentData.isOptimal) pathColor = '#10b981'; // Green for optimal
+                        if (this.currentTab === 'brute' && !currentData.isOptimal && !currentData.finalOptimal) pathColor = '#f59e0b'; // Orange evaluating
+                        if (this.currentTab === 'brute' && currentData.cost === 85) pathColor = '#ef4444'; // Red for greedy trap
+
+                        this.drawPath(currentData.path, pathColor, 3);
+                    }
+
+                    // Highlight specific edge (e.g., in greedy)
+                    if (currentData.highlightEdge) {
+                        this.drawEdge(currentData.highlightEdge[0], currentData.highlightEdge[1], '#ef4444', 4, true); // Red active
+                    }
+                }
+
+                // Draw Nodes on top
+                const activeNodeId = currentData ? currentData.activeNode : null;
+                this.drawNodes(activeNodeId);
+            }
+
+            drawAllBackgroundEdges() {
+                // Draw very faint edges to show connectivity, but don't clutter too much.
+                for (let i = 0; i < nodes.length; i++) {
+                    for (let j = 0; j < nodes.length; j++) {
+                        if (i !== j) {
+                            // Passing true for drawArrow and true for isBackground
+                            this.drawEdge(i+1, j+1, '#e2e8f0', 1, true, true);
+                        }
+                    }
+                }
+            }
+
+            drawPath(pathArr, color, lineWidth) {
+                for (let i = 0; i < pathArr.length - 1; i++) {
+                    this.drawEdge(pathArr[i], pathArr[i+1], color, lineWidth, true, false);
+                }
+            }
+
+            drawEdge(fromId, toId, color, width, drawArrow, isBackground = false) {
+                const fromNode = nodes.find(n => n.id === fromId);
+                const toNode = nodes.find(n => n.id === toId);
+                if (!fromNode || !toNode) return;
+
+                const ctx = this.ctx;
+                const r = 25; // Node radius
+
+                // Calculate vector
+                const dx = toNode.x - fromNode.x;
+                const dy = toNode.y - fromNode.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                // To avoid lines overlapping in asymmetric graphs, we curve them slightly based on orientation.
+                const offset = 25; // Curve distance
+                const nx = -dy / dist; // Normal x
+                const ny = dx / dist;  // Normal y
+                
+                const midX = (fromNode.x + toNode.x) / 2;
+                const midY = (fromNode.y + toNode.y) / 2;
+                
+                const cpX = midX + nx * offset;
+                const cpY = midY + ny * offset;
+
+                // Adjust start and end points so lines don't enter the node circle
+                const angleStart = Math.atan2(cpY - fromNode.y, cpX - fromNode.x);
+                const startX = fromNode.x + r * Math.cos(angleStart);
+                const startY = fromNode.y + r * Math.sin(angleStart);
+
+                const angleEnd = Math.atan2(toNode.y - cpY, toNode.x - cpX);
+                const endX = toNode.x - r * Math.cos(angleEnd);
+                const endY = toNode.y - r * Math.sin(angleEnd);
+
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                ctx.quadraticCurveTo(cpX, cpY, endX, endY);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = width;
+                ctx.stroke();
+
+                if (drawArrow) {
+                    this.drawArrowhead(ctx, endX, endY, angleEnd, color);
+                    
+                    // Draw text label (Cost) slightly offset from curve
+                    const cost = costMatrix[fromId-1][toId-1];
+                    
+                    // Style differently if it's a background edge
+                    const textColor = isBackground ? '#94a3b8' : color;
+                    const bgAlpha = isBackground ? '0.7' : '0.9';
+                    const fontSize = isBackground ? '10px' : '12px';
+
+                    ctx.font = `bold ${fontSize} Arial`;
+                    
+                    // Position roughly halfway along curve
+                    const tX = 0.25 * fromNode.x + 0.5 * cpX + 0.25 * toNode.x;
+                    const tY = 0.25 * fromNode.y + 0.5 * cpY + 0.25 * toNode.y;
+                    
+                    // Draw white background for text to make it readable
+                    ctx.fillStyle = `rgba(255, 255, 255, ${bgAlpha})`;
+                    const textWidth = ctx.measureText(cost).width;
+                    ctx.fillRect(tX - textWidth/2 - 4, tY - 8, textWidth + 8, 16);
+                    
+                    ctx.fillStyle = textColor;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(cost, tX, tY);
+                }
+            }
+
+            drawArrowhead(ctx, x, y, angle, color) {
+                const headlen = 10;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - headlen * Math.cos(angle - Math.PI / 6), y - headlen * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(x - headlen * Math.cos(angle + Math.PI / 6), y - headlen * Math.sin(angle + Math.PI / 6));
+                ctx.lineTo(x, y);
+                ctx.fillStyle = color;
+                ctx.fill();
+            }
+
+            drawNodes(activeNodeId) {
+                const ctx = this.ctx;
+                nodes.forEach(node => {
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, 25, 0, 2 * Math.PI);
+                    
+                    // Node Styling
+                    if (node.id === 1) {
+                        ctx.fillStyle = node.id === activeNodeId ? '#fef08a' : '#fef9c3'; // Yellowish for Start
+                        ctx.strokeStyle = '#eab308';
+                    } else {
+                        ctx.fillStyle = node.id === activeNodeId ? '#bfdbfe' : '#eff6ff'; // Blueish for others
+                        ctx.strokeStyle = '#3b82f6';
+                    }
+                    
+                    ctx.lineWidth = 3;
+                    ctx.fill();
+                    ctx.stroke();
+
+                    // Node Label
+                    ctx.fillStyle = '#1e293b';
+                    ctx.font = 'bold 14px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(node.label, node.x, node.y);
+                });
+            }
+
+            // Matrix generation updated for 5x5 dynamic size with safe grid inline styles
+            initMatrix() {
+                const container = document.getElementById('matrix-container');
+                const size = costMatrix.length;
+                
+                // Using inline grid-template-columns ensures it works even if tailwind purges dynamically generated grid-cols-X classes
+                let html = `<div style="display: grid; grid-template-columns: repeat(${size + 1}, minmax(0, 1fr));" class="gap-0 border border-gray-300 shadow-sm w-max">`;
+                
+                // Header row
+                html += '<div class="matrix-cell matrix-header"></div>';
+                for(let i=1; i<=size; i++) html += `<div class="matrix-cell matrix-header">${i}</div>`;
+                
+                // Rows
+                for(let i=0; i<size; i++) {
+                    html += `<div class="matrix-cell matrix-header">${i+1}</div>`; // Row header
+                    for(let j=0; j<size; j++) {
+                        html += `<div class="matrix-cell bg-white text-gray-700 font-medium">${costMatrix[i][j]}</div>`;
+                    }
+                }
+                html += '</div>';
+                container.innerHTML = html;
+            }
+        }
+
+        // Global instances
+        const vizController = new VisualizerController();
+
+        function switchTab(tabId) {
+            // Update Tab UI
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+
+            // Update Content HTML
+            document.getElementById('content-panel').innerHTML = contents[tabId];
+            
+            // Re-render MathJax
+            if (window.MathJax) {
+                MathJax.typesetPromise();
+            }
+
+            // Update Visualizer
+            vizController.setTab(tabId);
+        }
+
+        // Initialize first tab
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('content-panel').innerHTML = contents['intro'];
+            vizController.updateUI(); // Setup default UI state
+        });
+
+    </script>
+</body>
+</html>

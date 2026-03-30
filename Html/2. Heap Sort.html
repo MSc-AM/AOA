@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heap Sort & The Heapify Method | Interactive Guide</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        
+        /* Node Base & Transitions */
+        .heap-node {
+            transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: absolute;
+            transform: translate(-50%, -50%) scale(1) rotate(0deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.15rem;
+            width: 3.2rem;
+            height: 3.2rem;
+            border-radius: 9999px;
+            z-index: 10;
+        }
+
+        /* 1. Default (In Heap) */
+        .node-default {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: 3px solid #60a5fa;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4), inset 0 2px 4px rgba(255,255,255,0.3);
+        }
+
+        /* 2. Comparing State (Pulsing Orange) */
+        .node-comparing {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border: 3px solid #fcd34d;
+            box-shadow: 0 0 0 6px rgba(245, 158, 11, 0.3), 0 10px 15px rgba(245, 158, 11, 0.5);
+            transform: translate(-50%, -50%) scale(1.15) rotate(0deg);
+            z-index: 20;
+        }
+
+        /* 3. Swapping State (Rotating Red) */
+        .node-swapping {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            color: white;
+            border: 3px solid #fca5a5;
+            box-shadow: 0 0 0 8px rgba(239, 68, 68, 0.3), 0 15px 25px rgba(239, 68, 68, 0.6);
+            transform: translate(-50%, -50%) scale(1.25) rotate(360deg);
+            z-index: 30;
+        }
+
+        /* 4. Sorted State (Emerald Check) */
+        .node-sorted {
+            background: linear-gradient(135deg, #10b981, #047857);
+            color: white;
+            border: 3px solid #6ee7b7;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        /* 5. Hidden State */
+        .node-hidden {
+            opacity: 0;
+            pointer-events: none;
+            transform: translate(-50%, -50%) scale(0.5);
+        }
+
+        /* SVG Line Transitions */
+        .heap-edge {
+            transition: all 0.5s ease;
+            stroke-linecap: round;
+        }
+
+        .edge-active-compare { stroke: #f59e0b; stroke-width: 4; filter: drop-shadow(0px 0px 4px rgba(245,158,11,0.6)); z-index: 5; }
+        .edge-active-swap { stroke: #ef4444; stroke-width: 5; filter: drop-shadow(0px 0px 6px rgba(239,68,68,0.8)); z-index: 5; }
+        .edge-default { stroke: #cbd5e1; stroke-width: 2.5; }
+
+        .array-box {
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+            opacity: 0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .num-badge {
+            display: inline-block;
+            padding: 0.1rem 0.4rem;
+            margin: 0 0.15rem;
+            border-radius: 0.375rem;
+            font-weight: 800;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+        .num-badge:hover { transform: scale(1.1) rotate(-3deg); }
+    </style>
+</head>
+<body class="antialiased min-h-screen bg-slate-50">
+
+    <header class="bg-gradient-to-r from-blue-900 via-indigo-800 to-violet-900 shadow-lg sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-white flex items-center gap-2 drop-shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="text-blue-300"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                Heap Sort Guide
+            </h1>
+            <nav class="hidden md:flex gap-6 text-sm font-semibold text-blue-200">
+                <a href="#fundamentals" class="hover:text-white hover:underline transition">Fundamentals</a>
+                <a href="#interactive" class="text-white bg-white/20 px-3 py-1 rounded-full transition shadow-sm">Interactive Demo</a>
+                <a href="#complexity" class="hover:text-white hover:underline transition">Complexity</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-14">
+        
+        <section id="interactive" class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8 fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 border-b pb-2 flex justify-between items-center">
+                Interactive Heap Sort Visualization
+                <span class="text-sm font-normal px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full">Min-Heap (9 Elements)</span>
+            </h2>
+            
+            <p class="text-slate-600 mb-6 text-lg">
+                Let us examine a new unsorted array: <strong class="bg-blue-100 text-blue-900 px-2 py-0.5 rounded shadow-sm tracking-wider">A = [15, 3, 20, 10, 8, 4, 30, 2, 7]</strong>. Watch how the algorithm builds a Min-Heap step-by-step using insertion, and then performs sorting.
+            </p>
+
+            <div class="w-full bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xl flex flex-col mb-8 transform transition-all hover:shadow-2xl">
+                
+                <div class="p-5 text-center min-h-[90px] flex flex-col justify-center transition-all duration-500 ease-in-out relative overflow-hidden" id="status-box">
+                    <div class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjIiIGZpbGw9IiNmZmYiLz48L3N2Zz4=')] mix-blend-overlay"></div>
+                    <span class="text-xs font-bold uppercase tracking-widest text-white/70 mb-1.5 relative z-10" id="step-counter">Step 0 / 0</span>
+                    <p class="text-xl font-medium leading-tight relative z-10 text-white drop-shadow-md" id="status-message">Press 'Start Visualization' to begin.</p>
+                </div>
+
+                <div class="relative w-full h-[480px] bg-gradient-to-b from-slate-50 to-blue-50/40 border-b border-slate-200" id="tree-container">
+                    <svg class="absolute top-0 left-0 w-full h-full pointer-events-none" id="edges-svg"></svg>
+                </div>
+
+                <div class="p-6 bg-slate-50 flex flex-col items-center gap-6">
+                    <div class="w-full max-w-xl">
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 text-center">Current Heap Array</p>
+                        <div class="flex flex-wrap justify-center gap-2" id="array-heap"></div>
+                    </div>
+                    <div class="w-full max-w-xl pt-5 border-t border-slate-200">
+                        <p class="text-xs font-bold text-emerald-600 uppercase tracking-widest mb-3 text-center flex items-center justify-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            Sorted Output Array
+                        </p>
+                        <div class="flex flex-wrap justify-center gap-2 min-h-[44px]" id="array-sorted"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-center gap-5">
+                <button id="btn-reset" class="px-5 py-3 rounded-xl font-semibold text-slate-700 bg-white border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">Reset</button>
+                <button id="btn-prev" class="px-5 py-3 rounded-xl font-semibold text-slate-700 bg-slate-200 hover:bg-slate-300 transition-all disabled:opacity-40 shadow-sm">Previous Step</button>
+                <button id="btn-next" class="px-8 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg transform hover:-translate-y-0.5">Start Visualization</button>
+            </div>
+        </section>
+
+        <!-- Complexity Analysis -->
+        <section id="complexity" class="bg-white rounded-xl shadow-sm border border-slate-200 p-8 fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 border-b pb-2">Complexity & Theory</h2>
+            <div class="grid md:grid-cols-2 gap-10">
+                <div>
+                    <h3 class="font-bold text-lg text-blue-900 mb-3">Time Complexity: 𝓞(N log N)</h3>
+                    <ul class="space-y-3 text-slate-600">
+                        <li><strong>Building:</strong> Each insertion takes 𝓞(log N) time to sift up. Total: 𝓞(N log N).</li>
+                        <li><strong>Sorting:</strong> Removing the root N times and sifting down takes 𝓞(N log N).</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg text-emerald-900 mb-3">Space Complexity: 𝓞(1)</h3>
+                    <p class="text-slate-600">Heap Sort is an <strong>In-Place</strong> algorithm, requiring no extra storage regardless of the input size.</p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const initialValues = [15, 3, 20, 10, 8, 4, 30, 2, 7];
+            
+            // 9-Node Coordinate Map (4 Levels)
+            const NODE_COORDS = [
+                { x: 50, y: 10 },    // 0: Root
+                { x: 25, y: 32 },    // 1: L1 Left
+                { x: 75, y: 32 },    // 2: L1 Right
+                { x: 12, y: 55 },    // 3: L2 L-Left
+                { x: 38, y: 55 },    // 4: L2 L-Right
+                { x: 62, y: 55 },    // 5: L2 R-Left
+                { x: 88, y: 55 },    // 6: L2 R-Right
+                { x: 6, y: 80 },     // 7: L3 LL-Left
+                { x: 19, y: 80 }     // 8: L3 LL-Right
+            ];
+
+            const treeContainer = document.getElementById('tree-container');
+            const svgEdges = document.getElementById('edges-svg');
+            const arrayHeapContainer = document.getElementById('array-heap');
+            const arraySortedContainer = document.getElementById('array-sorted');
+            const statusMessage = document.getElementById('status-message');
+            const stepCounter = document.getElementById('step-counter');
+            const statusBox = document.getElementById('status-box');
+            const btnNext = document.getElementById('btn-next');
+            const btnPrev = document.getElementById('btn-prev');
+            const btnReset = document.getElementById('btn-reset');
+
+            let history = [];
+            let currentStep = -1;
+            let nodeElements = {};
+
+            function generateSimulation() {
+                history = [];
+                let simHeap = [];
+                let simSorted = [];
+                let uninserted = initialValues.map((val, i) => ({ id: `n${i}`, val: val }));
+
+                function record(msg, activeIds = [], isSwap = false, isSorted = false) {
+                    history.push({
+                        heap: [...simHeap],
+                        sorted: [...simSorted],
+                        uninserted: [...uninserted],
+                        msg, activeIds, isSwap, isSorted
+                    });
+                }
+
+                record("Initial Unsorted Array loaded. Starting Top-Down Heap Construction.");
+
+                // Phase 1: Build Heap (Top-Down)
+                while (uninserted.length > 0) {
+                    let newNode = uninserted.shift();
+                    simHeap.push(newNode);
+                    let curr = simHeap.length - 1;
+                    record(`Inserted ${newNode.val} at the end of the heap. Checking parent...`, [newNode.id]);
+
+                    while (curr > 0) {
+                        let parent = Math.floor((curr - 1) / 2);
+                        record(`Comparing ${simHeap[curr].val} with parent ${simHeap[parent].val}.`, [simHeap[curr].id, simHeap[parent].id]);
+                        if (simHeap[curr].val < simHeap[parent].val) {
+                            record(`Violation! Swapping ${simHeap[curr].val} and ${simHeap[parent].val}.`, [simHeap[curr].id, simHeap[parent].id], true);
+                            let tmp = simHeap[curr];
+                            simHeap[curr] = simHeap[parent];
+                            simHeap[parent] = tmp;
+                            curr = parent;
+                            record(`Sifted up successfully.`, [simHeap[curr].id]);
+                        } else {
+                            record(`Balanced.`, [simHeap[curr].id, simHeap[parent].id]);
+                            break;
+                        }
+                    }
+                }
+
+                record("Phase 1 Complete: Valid Min-Heap built! Beginning Phase 2: Sorting.", [], false, true);
+
+                // Phase 2: Sorting (Root Extraction)
+                function siftDown(n, i) {
+                    let smallest = i;
+                    let left = 2 * i + 1;
+                    let right = 2 * i + 2;
+
+                    if (left < n) {
+                        record(`Comparing ${simHeap[i].val} with left child ${simHeap[left].val}.`, [simHeap[i].id, simHeap[left].id]);
+                        if (simHeap[left].val < simHeap[smallest].val) smallest = left;
+                    }
+                    if (right < n) {
+                        record(`Comparing current smallest with right child ${simHeap[right].val}.`, [simHeap[smallest].id, simHeap[right].id]);
+                        if (simHeap[right].val < simHeap[smallest].val) smallest = right;
+                    }
+
+                    if (smallest !== i) {
+                        record(`Violation! Swapping parent ${simHeap[i].val} with child ${simHeap[smallest].val}.`, [simHeap[i].id, simHeap[smallest].id], true);
+                        let tmp = simHeap[i];
+                        simHeap[i] = simHeap[smallest];
+                        simHeap[smallest] = tmp;
+                        siftDown(n, smallest);
+                    } else {
+                        if (n > 1) record(`Root node satisfies property.`, [simHeap[i].id]);
+                    }
+                }
+
+                let n = simHeap.length;
+                while (n > 0) {
+                    let root = simHeap[0];
+                    record(`Extracting root (${root.val}) to sorted array.`, [root.id]);
+                    if (n > 1) {
+                        let last = simHeap[n - 1];
+                        record(`Promoting last element (${last.val}) to root position.`, [root.id, last.id], true);
+                        simHeap[0] = simHeap.pop();
+                        simSorted.push(root);
+                        n--;
+                        record(`New root is ${simHeap[0].val}. Sifting down...`, [simHeap[0].id]);
+                        siftDown(n, 0);
+                    } else {
+                        simSorted.push(simHeap.pop());
+                        n--;
+                    }
+                }
+                record("The array is now fully sorted!", [], false, true);
+            }
+
+            function initializeDOM() {
+                treeContainer.querySelectorAll('.heap-node').forEach(n => n.remove());
+                nodeElements = {};
+                initialValues.forEach((val, i) => {
+                    let el = document.createElement('div');
+                    el.className = 'heap-node node-hidden';
+                    el.innerText = val;
+                    treeContainer.appendChild(el);
+                    nodeElements[`n${i}`] = el;
+                });
+            }
+
+            function updateUI(idx) {
+                const state = history[idx];
+                stepCounter.innerText = `Step ${idx} / ${history.length - 1}`;
+                statusMessage.innerHTML = state.msg.replace(/\b(\d+)\b/g, '<span class="num-badge bg-white/25 text-white">$1</span>');
+                
+                statusBox.className = 'p-5 text-center min-h-[90px] flex flex-col justify-center relative overflow-hidden ';
+                if (state.isSorted) statusBox.classList.add('bg-gradient-to-r', 'from-emerald-600', 'to-teal-600');
+                else if (state.isSwap) statusBox.classList.add('bg-gradient-to-r', 'from-rose-600', 'to-red-600');
+                else if (state.activeIds.length > 0) statusBox.classList.add('bg-gradient-to-r', 'from-amber-500', 'to-orange-500');
+                else statusBox.classList.add('bg-gradient-to-r', 'from-slate-800', 'to-slate-700');
+
+                Object.values(nodeElements).forEach(el => el.className = 'heap-node node-hidden');
+                state.heap.forEach((obj, i) => {
+                    const el = nodeElements[obj.id];
+                    el.style.left = `${NODE_COORDS[i].x}%`;
+                    el.style.top = `${NODE_COORDS[i].y}%`;
+                    el.className = 'heap-node ' + (state.activeIds.includes(obj.id) ? (state.isSwap ? 'node-swapping' : 'node-comparing') : 'node-default');
+                });
+
+                svgEdges.innerHTML = '';
+                for (let i = 1; i < state.heap.length; i++) {
+                    let pIdx = Math.floor((i - 1) / 2);
+                    let pId = state.heap[pIdx].id, cId = state.heap[i].id;
+                    let isActive = state.activeIds.includes(pId) && state.activeIds.includes(cId);
+                    let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                    line.setAttribute('x1', `${NODE_COORDS[pIdx].x}%`); line.setAttribute('y1', `${NODE_COORDS[pIdx].y}%`);
+                    line.setAttribute('x2', `${NODE_COORDS[i].x}%`); line.setAttribute('y2', `${NODE_COORDS[i].y}%`);
+                    line.setAttribute('class', 'heap-edge ' + (isActive ? (state.isSwap ? 'edge-active-swap' : 'edge-active-compare') : 'edge-default'));
+                    svgEdges.appendChild(line);
+                }
+
+                arrayHeapContainer.innerHTML = '';
+                [...state.heap, ...state.uninserted].forEach((obj, i) => {
+                    let box = document.createElement('div');
+                    box.className = 'w-10 h-10 flex items-center justify-center font-bold rounded-lg text-sm ';
+                    box.innerText = obj.val;
+                    if (state.activeIds.includes(obj.id)) box.classList.add('bg-orange-500', 'text-white', 'scale-110');
+                    else if (i < state.heap.length) box.classList.add('bg-blue-100', 'text-blue-900', 'border');
+                    else box.classList.add('bg-slate-100', 'text-slate-400', 'border', 'border-dashed');
+                    arrayHeapContainer.appendChild(box);
+                });
+
+                arraySortedContainer.innerHTML = '';
+                state.sorted.forEach(obj => {
+                    let box = document.createElement('div');
+                    box.className = 'w-10 h-10 flex items-center justify-center font-bold rounded-lg text-sm bg-emerald-500 text-white fade-in';
+                    box.innerText = obj.val;
+                    arraySortedContainer.appendChild(box);
+                });
+
+                btnPrev.disabled = idx === 0;
+                btnNext.innerText = idx === history.length - 1 ? "Restart Simulation" : "Next Step";
+            }
+
+            btnNext.addEventListener('click', () => {
+                if (currentStep < history.length - 1) updateUI(++currentStep);
+                else { currentStep = 0; updateUI(0); }
+            });
+            btnPrev.addEventListener('click', () => { if (currentStep > 0) updateUI(--currentStep); });
+            btnReset.addEventListener('click', () => { currentStep = 0; updateUI(0); });
+
+            generateSimulation();
+            initializeDOM();
+            updateUI(0);
+        });
+    </script>
+</body>
+</html>
