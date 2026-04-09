@@ -1,0 +1,939 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strassen's Matrix Multiplication</title>
+    <style>
+        /* CSS Variables for Light & Dark Theme */
+        :root {
+            --bg-color: #f4f7f6;
+            --text-main: #2d3436;
+            --text-muted: #636e72;
+            --header-bg: #ffffff;
+            --panel-bg: #ffffff;
+            --border-color: #dfe6e9;
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+            --modal-overlay: rgba(0, 0, 0, 0.4);
+            
+            --matrix-a-bg: #e3f2fd;
+            --matrix-a-border: #2196f3;
+            --matrix-a-text: #0d47a1;
+            
+            --matrix-b-bg: #e8f5e9;
+            --matrix-b-border: #4caf50;
+            --matrix-b-text: #1b5e20;
+            
+            --matrix-c-bg: #f3e5f5;
+            --matrix-c-border: #9c27b0;
+            --matrix-c-text: #4a148c;
+
+            --p-var-bg: #fff3e0;
+            --p-var-border: #ff9800;
+            --p-var-text: #e65100;
+
+            --highlight: #ffd54f;
+            --highlight-glow: rgba(255, 213, 79, 0.6);
+
+            --btn-primary: #3b82f6;
+            --btn-primary-hover: #60a5fa;
+            --btn-text: #ffffff;
+            --btn-disabled: #b2bec3;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --header-bg: #1e293b;
+            --panel-bg: #1e293b;
+            --border-color: #334155;
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            --modal-overlay: rgba(0, 0, 0, 0.7);
+
+            --matrix-a-bg: rgba(33, 150, 243, 0.15);
+            --matrix-a-border: #64b5f6;
+            --matrix-a-text: #90caf9;
+            
+            --matrix-b-bg: rgba(76, 175, 80, 0.15);
+            --matrix-b-border: #81c784;
+            --matrix-b-text: #a5d6a7;
+            
+            --matrix-c-bg: rgba(156, 39, 176, 0.15);
+            --matrix-c-border: #ba68c8;
+            --matrix-c-text: #ce93d8;
+
+            --p-var-bg: rgba(255, 152, 0, 0.15);
+            --p-var-border: #ffb74d;
+            --p-var-text: #ffcc80;
+
+            --highlight: #ffca28;
+            --highlight-glow: rgba(255, 202, 40, 0.4);
+
+            --btn-primary: #3b82f6;
+            --btn-primary-hover: #60a5fa;
+            --btn-text: #ffffff;
+            --btn-disabled: #475569;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        /* Responsive Body 
+           Allows vertical scrolling for mobile while extending fully on desktop 
+        */
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            width: 100vw;
+            overflow-x: hidden;
+            overflow-y: auto; 
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* HEADER */
+        header {
+            background-color: var(--header-bg);
+            padding: clamp(10px, 1.5vh, 20px) clamp(15px, 2.5vw, 40px);
+            display: flex;
+            flex-wrap: wrap; /* Wraps items nicely on small screens */
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            box-shadow: var(--shadow);
+            z-index: 10;
+        }
+
+        .header-title {
+            font-size: clamp(20px, 2.5vh, 32px);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .header-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        button, select {
+            padding: clamp(8px, 1vh, 12px) clamp(12px, 1.5vw, 20px);
+            font-size: clamp(14px, 1.8vh, 20px);
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary { background-color: var(--btn-primary); color: var(--btn-text); }
+        .btn-primary:hover:not(:disabled) { background-color: var(--btn-primary-hover); transform: translateY(-2px); }
+        .btn-primary:disabled { background-color: var(--btn-disabled); cursor: not-allowed; transform: none; }
+        .btn-secondary { background-color: var(--panel-bg); color: var(--text-main); border: 2px solid var(--border-color); }
+        .btn-secondary:hover { border-color: var(--btn-primary); }
+        select { background-color: var(--panel-bg); color: var(--text-main); border: 2px solid var(--border-color); max-width: 100%; }
+
+        /* BANNER */
+        .banner {
+            text-align: center;
+            padding: clamp(10px, 1.2vh, 15px) 15px;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            font-size: clamp(14px, 2vh, 22px);
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* MAIN CONTENT AREA */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: clamp(15px, 2vh, 30px) clamp(15px, 3vw, 40px);
+            gap: clamp(15px, 2vh, 30px);
+            justify-content: flex-start;
+        }
+
+        /* MATRICES ROW */
+        .matrices-row {
+            display: flex;
+            flex-wrap: wrap; /* Keys to making matrices fall beautifully on mobile */
+            justify-content: center;
+            align-items: center;
+            gap: clamp(15px, 4vw, 50px);
+        }
+
+        .matrix-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(8px, 1.5vh, 15px);
+        }
+
+        .matrix-title {
+            font-size: clamp(18px, 2.8vh, 32px);
+            font-weight: bold;
+        }
+
+        .matrix-grid {
+            display: grid;
+            gap: clamp(4px, 0.8vh, 8px);
+            padding: clamp(10px, 2vh, 20px);
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            position: relative;
+        }
+
+        /* Parent Matrix Brackets */
+        .matrix-grid::before, .matrix-grid::after {
+            content: ''; position: absolute; top: 1vh; bottom: 1vh;
+            width: clamp(8px, 1vw, 15px); border: clamp(2px, 0.4vh, 4px) solid var(--text-main);
+        }
+        .matrix-grid::before { left: clamp(4px, 0.5vw, 8px); border-right: none; }
+        .matrix-grid::after { right: clamp(4px, 0.5vw, 8px); border-left: none; }
+
+        /* 4x4 Quadrant Cross Dividers */
+        .quad-divider-v {
+            position: absolute;
+            top: 5%; bottom: 5%; left: 50%;
+            width: 0;
+            border-left: clamp(2px, 0.4vh, 4px) dashed var(--text-main);
+            transform: translateX(-50%);
+            z-index: 5;
+            opacity: 0.8;
+        }
+        .quad-divider-h {
+            position: absolute;
+            left: 5%; right: 5%; top: 50%;
+            height: 0;
+            border-top: clamp(2px, 0.4vh, 4px) dashed var(--text-main);
+            transform: translateY(-50%);
+            z-index: 5;
+            opacity: 0.8;
+        }
+
+        /* Cells controlled by CSS Classes for Responsive Handling */
+        .cell {
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold;
+            border-radius: 8px;
+            border: clamp(2px, 0.3vh, 3px) solid transparent;
+            z-index: 2;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .cell-2x2 {
+            width: clamp(60px, 12vh, 120px);
+            height: clamp(60px, 12vh, 120px);
+            font-size: clamp(24px, 4vh, 40px);
+        }
+        
+        .cell-4x4 {
+            width: clamp(35px, 7vh, 70px);
+            height: clamp(35px, 7vh, 70px);
+            font-size: clamp(14px, 2.5vh, 24px);
+        }
+
+        .matrix-a .cell { background-color: var(--matrix-a-bg); border-color: var(--matrix-a-border); color: var(--matrix-a-text); }
+        .matrix-b .cell { background-color: var(--matrix-b-bg); border-color: var(--matrix-b-border); color: var(--matrix-b-text); }
+        .matrix-c .cell { background-color: var(--matrix-c-bg); border-color: var(--matrix-c-border); color: var(--matrix-c-text); }
+        
+        /* Faded Padding Cells */
+        .cell.padded-cell { 
+            opacity: 0.4; 
+            background-color: transparent !important; 
+            border: clamp(2px, 0.3vh, 3px) dashed var(--text-muted) !important; 
+            color: var(--text-muted) !important; 
+        }
+
+        .operator { font-size: clamp(30px, 6vh, 60px); font-weight: bold; color: var(--text-muted); }
+
+        /* P-VARIABLES PANEL */
+        .p-panel {
+            display: flex; justify-content: center; align-items: stretch; gap: clamp(8px, 1.5vw, 20px);
+            padding: clamp(10px, 1.5vh, 20px); background-color: var(--panel-bg);
+            border-radius: 12px; box-shadow: var(--shadow);
+            flex-wrap: wrap; /* Essential for mobile */
+        }
+
+        .p-var {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-width: clamp(70px, 8vw, 120px); padding: clamp(5px, 0.8vh, 10px) clamp(10px, 1.5vw, 20px); 
+            min-height: clamp(60px, 8vh, 100px); flex: 1; max-width: 140px;
+            background-color: var(--p-var-bg); border: clamp(2px, 0.3vh, 3px) solid var(--p-var-border);
+            border-radius: 8px; color: var(--p-var-text); font-weight: bold;
+            opacity: 0.4; transition: all 0.4s ease;
+        }
+
+        .p-var.active { opacity: 1; transform: scale(1.05); box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3); }
+        .p-var .p-label { font-size: clamp(14px, 1.8vh, 20px); margin-bottom: 5px; }
+        .p-var .p-val { font-size: clamp(18px, 3vh, 32px); display: flex; align-items: center; justify-content: center;}
+        
+        .p-matrix {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px;
+            font-size: clamp(12px, 1.8vh, 20px); line-height: 1;
+            background: rgba(255, 255, 255, 0.2); padding: 5px; border-radius: 4px;
+        }
+
+        /* CALCULATION PANEL */
+        .calc-panel {
+            background-color: var(--panel-bg);
+            border: 2px solid var(--border-color);
+            padding: clamp(15px, 2vh, 30px) clamp(15px, 3vw, 40px); border-radius: 12px; box-shadow: var(--shadow);
+            display: flex; flex-direction: column; gap: clamp(10px, 1.5vh, 20px); min-height: 140px;
+            margin-bottom: 20px; /* Buffer for scrolling to bottom on mobile */
+        }
+
+        .calc-header-row {
+            display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+            border-bottom: 1px solid var(--border-color); padding-bottom: 10px;
+        }
+
+        .calc-title { font-size: clamp(16px, 2.5vh, 28px); font-weight: bold; color: var(--text-muted); }
+        .calc-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+        .calc-formulas { display: flex; flex-direction: column; justify-content: center; flex: 1; gap: 10px; }
+        
+        .calc-formula-row { 
+            display: flex; align-items: center; flex-wrap: wrap; justify-content: center; gap: clamp(4px, 0.5vw, 8px); 
+            min-height: 40px; 
+        }
+
+        /* Inline Matrix Formula Styling */
+        .math-sym { font-family: 'Courier New', Courier, monospace; font-size: clamp(18px, 3.5vh, 40px); font-weight: bold; color: var(--text-main); }
+        .math-op { font-family: 'Courier New', Courier, monospace; font-size: clamp(20px, 4vh, 45px); font-weight: bold; color: var(--text-main); margin: 0 clamp(2px, 0.5vw, 6px); }
+        .math-paren { font-family: 'Courier New', Courier, monospace; font-size: clamp(35px, 8vh, 90px); font-weight: 300; line-height: 0.8; color: var(--text-main); display: inline-flex; align-items: center; }
+        
+        .inline-matrix {
+            display: inline-grid; gap: 4px; padding: 4px clamp(5px, 1vw, 10px);
+            position: relative; vertical-align: middle; text-align: center; margin: 0 4px;
+        }
+        .inline-matrix::before, .inline-matrix::after {
+            content: ''; position: absolute; top: 0; bottom: 0; width: clamp(4px, 0.6vw, 8px); border: 2px solid var(--text-main);
+        }
+        .inline-matrix::before { left: 0; border-right: none; }
+        .inline-matrix::after { right: 0; border-left: none; }
+        .im-cell { min-width: clamp(15px, 2vw, 30px); font-weight: bold; font-size: clamp(14px, 2.5vh, 30px); display: flex; align-items: center; justify-content: center; }
+        .im-font-large { font-size: clamp(20px, 4vh, 40px); padding: 0 5px; }
+
+        /* HIGHLIGHT ANIMATIONS */
+        .highlight {
+            background-color: var(--highlight) !important; color: #000 !important;
+            border-color: #f57f17 !important; transform: scale(1.1);
+            box-shadow: 0 0 15px var(--highlight-glow); z-index: 10;
+        }
+
+        /* MODALS */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--modal-overlay); display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal-content {
+            background-color: var(--panel-bg); width: 800px; max-width: 90vw; max-height: 85vh;
+            border-radius: 16px; padding: clamp(20px, 5vh, 40px); box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow-y: auto; position: relative; transform: translateY(20px); transition: transform 0.3s;
+        }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .close-btn { position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-muted); }
+        .close-btn:hover { color: var(--text-main); }
+        .theory-content h2 { margin-bottom: 15px; color: var(--btn-primary); font-size: clamp(20px, 3vh, 28px); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+        .theory-content h3 { margin: 20px 0 10px; color: var(--text-main); font-size: clamp(18px, 2vh, 22px);}
+        .theory-content p { line-height: 1.6; margin-bottom: 15px; color: var(--text-muted); font-size: clamp(14px, 1.8vh, 18px); }
+        .theory-content ul { margin-left: 20px; margin-bottom: 15px; color: var(--text-muted); font-size: clamp(14px, 1.8vh, 18px);}
+        .theory-content li { margin-bottom: 8px; }
+        .formula-box { background-color: var(--bg-color); padding: 15px; border-radius: 8px; border-left: 4px solid var(--btn-primary); margin-bottom: 20px; font-family: monospace; font-size: clamp(14px, 1.8vh, 18px); line-height: 1.8; overflow-x: auto; white-space: nowrap; }
+        .math-block { text-align: center; font-size: clamp(16px, 2vh, 20px); margin: 15px 0; color: var(--text-main); overflow-x: auto; white-space: nowrap;}
+
+        .status-popup { text-align: center; }
+        .status-popup h2 { font-size: clamp(24px, 4vh, 36px); margin-bottom: 15px; color: var(--matrix-b-border); }
+        .status-popup p { font-size: clamp(16px, 2vh, 18px); margin-bottom: 25px; color: var(--text-muted); }
+
+        /* Responsive adjustments exclusively for smaller screens (Mobile Phones).
+           Overrides desktop scaling limits.
+        */
+        @media (max-width: 768px) {
+            header { flex-direction: column; text-align: center; }
+            .header-controls { justify-content: center; width: 100%; }
+            select { width: 100%; max-width: 300px; }
+            .matrices-row { flex-direction: column; gap: 20px; }
+            .cell-2x2 { width: 70px; height: 70px; font-size: 24px; }
+            .cell-4x4 { width: 40px; height: 40px; font-size: 16px; }
+            .operator { margin: -10px 0; }
+            .p-panel { gap: 10px; }
+            .p-var { min-width: 60px; min-height: 60px; padding: 5px; }
+            .calc-header-row { flex-direction: column; text-align: center; }
+            .math-sym { font-size: 16px; }
+            .math-op { font-size: 18px; }
+            .math-paren { font-size: 35px; }
+            .im-cell { min-width: 15px; font-size: 12px; }
+            .im-font-large { font-size: 16px; }
+            .calc-formula-row { align-items: center; justify-content: center; text-align: center; line-height: 1.4; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="header-title">
+            <span>🔢</span> Strassen’s Matrix Multiplication
+        </div>
+        <div class="header-controls">
+            <button class="btn-secondary" onclick="openModal('theoryModal')">📖 Read PDF Notes</button>
+            <select id="exampleSelect" onchange="loadExample()">
+                <option value="basic">Example 1: Basic 2x2</option>
+                <option value="negatives">Example 2: Negative Numbers</option>
+                <option value="identity">Example 3: Identity Matrix</option>
+                <option value="threeByThree" selected>Example 4: 3x3 Matrix (Padded)</option>
+            </select>
+            <button class="btn-secondary" onclick="toggleTheme()" id="themeToggle">🌙 Dark Mode</button>
+        </div>
+    </header>
+
+    <div class="banner" id="bannerText">
+        Step 0: We will multiply Matrix A and Matrix B using Strassen's 7 multiplications.
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="matrices-row">
+            <div class="matrix-container">
+                <div class="matrix-title" style="color: var(--matrix-a-text)">Matrix A</div>
+                <div class="matrix-grid matrix-a" id="matrixA"></div>
+            </div>
+            <div class="operator">×</div>
+            <div class="matrix-container">
+                <div class="matrix-title" style="color: var(--matrix-b-text)">Matrix B</div>
+                <div class="matrix-grid matrix-b" id="matrixB"></div>
+            </div>
+            <div class="operator">=</div>
+            <div class="matrix-container">
+                <div class="matrix-title" style="color: var(--matrix-c-text)">Matrix C</div>
+                <div class="matrix-grid matrix-c" id="matrixC"></div>
+            </div>
+        </div>
+
+        <div class="p-panel" id="pPanel">
+            <div class="p-var" id="p1"><span class="p-label">P₁</span><span class="p-val" id="p1-val">-</span></div>
+            <div class="p-var" id="p2"><span class="p-label">P₂</span><span class="p-val" id="p2-val">-</span></div>
+            <div class="p-var" id="p3"><span class="p-label">P₃</span><span class="p-val" id="p3-val">-</span></div>
+            <div class="p-var" id="p4"><span class="p-label">P₄</span><span class="p-val" id="p4-val">-</span></div>
+            <div class="p-var" id="p5"><span class="p-label">P₅</span><span class="p-val" id="p5-val">-</span></div>
+            <div class="p-var" id="p6"><span class="p-label">P₆</span><span class="p-val" id="p6-val">-</span></div>
+            <div class="p-var" id="p7"><span class="p-label">P₇</span><span class="p-val" id="p7-val">-</span></div>
+        </div>
+
+        <!-- CALCULATION PANEL -->
+        <div class="calc-panel">
+            <div class="calc-header-row">
+                <div class="calc-title" id="calcTitle">Ready to Begin</div>
+                <div class="calc-actions">
+                    <button class="btn-secondary" onclick="reset()">🔄 Reset</button>
+                    <button class="btn-primary" id="nextBtn" onclick="nextStep()">▶ Next Step</button>
+                </div>
+            </div>
+            <div class="calc-formulas">
+                <div class="calc-formula-row" id="calcFormulaSym">
+                    <span class="math-sym" style="font-weight: normal; text-align: center;">Select an example and click Next Step to begin.</span>
+                </div>
+                <div class="calc-formula-row" id="calcFormulaVal"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theory Modal -->
+    <div class="modal-overlay" id="theoryModal">
+        <div class="modal-content theory-content">
+            <button class="close-btn" onclick="closeModal('theoryModal')">✖</button>
+            <h2>📖 Strassen's Matrix Multiplication</h2>
+            
+            <h3>1. Introduction: Why do we need it?</h3>
+            <p>Imagine you have two matrices, A and B, both of size N &times; N. If you multiply them using the standard row-by-column method you learned in school, you have to do N<sup>3</sup> multiplications.</p>
+            <ul>
+                <li>For a 2 &times; 2 matrix, that's 2<sup>3</sup> = 8 multiplications.</li>
+                <li>For a 1000 &times; 1000 matrix, that's 1,000,000,000 multiplications!</li>
+            </ul>
+            <p>In 1969, a mathematician named Volker Strassen shocked the math world by proving that O(N<sup>3</sup>) is not the fastest way to multiply matrices. He found a clever way to reduce the number of multiplications, speeding up the algorithm significantly for large matrices.</p>
+            
+            <h3>2. The Core Concept: Divide and Conquer</h3>
+            <p>Strassen's algorithm is a classic Divide and Conquer approach. We take our large N &times; N matrices and divide them into 4 smaller submatrices, each of size N/2 &times; N/2.</p>
+            <p>Let A and B be our matrices, and C be the result (C = A &times; B):</p>
+            
+            <div class="math-block">
+                [ C<sub>11</sub> &nbsp; C<sub>12</sub> ] <br>
+                [ C<sub>21</sub> &nbsp; C<sub>22</sub> ] <br>
+                = <br>
+                [ A<sub>11</sub> &nbsp; A<sub>12</sub> ] &times; [ B<sub>11</sub> &nbsp; B<sub>12</sub> ] <br>
+                [ A<sub>21</sub> &nbsp; A<sub>22</sub> ] &nbsp;&nbsp;&nbsp;&nbsp; [ B<sub>21</sub> &nbsp; B<sub>22</sub> ]
+            </div>
+
+            <p>In the Standard Divide and Conquer method, we would calculate C like this:</p>
+            <div class="formula-box">
+                C<sub>11</sub> = A<sub>11</sub>B<sub>11</sub> + A<sub>12</sub>B<sub>21</sub><br>
+                C<sub>12</sub> = A<sub>11</sub>B<sub>12</sub> + A<sub>12</sub>B<sub>22</sub><br>
+                C<sub>21</sub> = A<sub>21</sub>B<sub>11</sub> + A<sub>22</sub>B<sub>21</sub><br>
+                C<sub>22</sub> = A<sub>21</sub>B<sub>12</sub> + A<sub>22</sub>B<sub>22</sub>
+            </div>
+            <p>Notice how many times we multiply two submatrices together? Exactly 8 times. This still gives us O(N<sup>3</sup>) time complexity.</p>
+
+            <p><strong>Strassen's "Magic" Trick:</strong><br>
+            Strassen found a highly clever combination of additions and subtractions that allows us to find all four quadrants of C using only <strong>7 matrix multiplications instead of 8!</strong> Trading 1 multiplication for a few extra additions is a huge win because matrix multiplication is extremely slow compared to matrix addition.</p>
+
+            <h3>3. The 7 Formulas (P<sub>1</sub> to P<sub>7</sub>)</h3>
+            <p>Here are the 7 products Strassen discovered. (Don't worry about memorizing them unless your professor specifically asks you to; focus on understanding the concept!)</p>
+            
+            <p><strong>Step 1: Calculate the 7 Products</strong></p>
+            <div class="formula-box">
+                P<sub>1</sub> = A<sub>11</sub> &times; (B<sub>12</sub> - B<sub>22</sub>)<br>
+                P<sub>2</sub> = (A<sub>11</sub> + A<sub>12</sub>) &times; B<sub>22</sub><br>
+                P<sub>3</sub> = (A<sub>21</sub> + A<sub>22</sub>) &times; B<sub>11</sub><br>
+                P<sub>4</sub> = A<sub>22</sub> &times; (B<sub>21</sub> - B<sub>11</sub>)<br>
+                P<sub>5</sub> = (A<sub>11</sub> + A<sub>22</sub>) &times; (B<sub>11</sub> + B<sub>22</sub>)<br>
+                P<sub>6</sub> = (A<sub>12</sub> - A<sub>22</sub>) &times; (B<sub>21</sub> + B<sub>22</sub>)<br>
+                P<sub>7</sub> = (A<sub>11</sub> - A<sub>21</sub>) &times; (B<sub>11</sub> + B<sub>12</sub>)
+            </div>
+
+            <p><strong>Step 2: Combine them into Matrix C</strong></p>
+            <p>Once you have P<sub>1</sub> through P<sub>7</sub>, you construct the final matrix using simple addition and subtraction:</p>
+            <div class="formula-box">
+                C<sub>11</sub> = P<sub>5</sub> + P<sub>4</sub> - P<sub>2</sub> + P<sub>6</sub><br>
+                C<sub>12</sub> = P<sub>1</sub> + P<sub>2</sub><br>
+                C<sub>21</sub> = P<sub>3</sub> + P<sub>4</sub><br>
+                C<sub>22</sub> = P<sub>5</sub> + P<sub>1</sub> - P<sub>3</sub> - P<sub>7</sub>
+            </div>
+
+            <h3>4. Time Complexity Analysis</h3>
+            <p>Since we divide the problem into 7 subproblems (instead of 8), each of size N/2, our recurrence relation becomes:</p>
+            <p class="math-block">T(N) = 7T(N/2) + O(N<sup>2</sup>)</p>
+            <p>Where O(N<sup>2</sup>) is the time taken to do the matrix additions and subtractions. Using the Master Theorem, we compare N<sup>log<sub>b</sub>a</sup> to f(N):</p>
+            <ul>
+                <li>a = 7, b = 2 &rArr; N<sup>log<sub>2</sub>7</sup> &approx; N<sup>2.81</sup></li>
+                <li>f(N) = O(N<sup>2</sup>)</li>
+            </ul>
+            <p>Since N<sup>2.81</sup> > N<sup>2</sup>, the time complexity is:</p>
+            <p class="math-block">O(N<sup>log<sub>2</sub>7</sup>) &approx; O(N<sup>2.81</sup>)</p>
+            <p>This is significantly faster than O(N<sup>3</sup>) for huge numbers!</p>
+        </div>
+    </div>
+
+    <!-- Completion Modal -->
+    <div class="modal-overlay" id="completeModal">
+        <div class="modal-content status-popup">
+            <button class="close-btn" onclick="closeModal('completeModal')">✖</button>
+            <h2>🎉 Multiplication Complete!</h2>
+            <p>You have successfully multiplied the matrices using Strassen's 7-step method.</p>
+            <button class="btn-primary" onclick="reset(); closeModal('completeModal');">Try Another Example</button>
+        </div>
+    </div>
+
+    <script>
+        // Data Models
+        const examples = {
+            basic: { A: [[1, 3], [2, 4]], B: [[2, 0], [1, 2]] },
+            negatives: { A: [[-1, 2], [3, -4]], B: [[5, -2], [-1, 3]] },
+            identity: { A: [[7, 4], [9, 2]], B: [[1, 0], [0, 1]] },
+            threeByThree: { 
+                A: [[1, 2, 1], [3, 4, 1], [0, 1, 2]], 
+                B: [[1, 0, 1], [0, 1, 1], [1, 1, 0]] 
+            }
+        };
+
+        let originalSize = 2;
+        let paddedSize = 2;
+        let qSize = 1; 
+        
+        let currentData = { A: [], B: [], C: [], P: [] };
+        let currentStep = 0;
+        const ANIMATION_DELAY = 1000;
+
+        /* Core Matrix Math Engine */
+        function padMatrix(mat, targetSize) {
+            let res = [];
+            for (let r = 0; r < targetSize; r++) {
+                let row = [];
+                for (let c = 0; c < targetSize; c++) {
+                    if (r < mat.length && c < mat[0].length) row.push(mat[r][c]);
+                    else row.push(0);
+                }
+                res.push(row);
+            }
+            return res;
+        }
+
+        function getQuadrant(M, rIdx, cIdx) {
+            let res = [];
+            for (let r = 0; r < qSize; r++) {
+                let row = [];
+                for (let c = 0; c < qSize; c++) row.push(M[rIdx * qSize + r][cIdx * qSize + c]);
+                res.push(row);
+            }
+            return res;
+        }
+
+        function matAdd(A, B) {
+            let res = [];
+            for (let r = 0; r < A.length; r++) {
+                let row = [];
+                for (let c = 0; c < A[0].length; c++) row.push(A[r][c] + B[r][c]);
+                res.push(row);
+            }
+            return res;
+        }
+
+        function matSub(A, B) {
+            let res = [];
+            for (let r = 0; r < A.length; r++) {
+                let row = [];
+                for (let c = 0; c < A[0].length; c++) row.push(A[r][c] - B[r][c]);
+                res.push(row);
+            }
+            return res;
+        }
+
+        function matMul(A, B) {
+            let res = [];
+            for (let r = 0; r < A.length; r++) {
+                let row = [];
+                for (let c = 0; c < B[0].length; c++) {
+                    let sum = 0;
+                    for (let k = 0; k < A[0].length; k++) sum += A[r][k] * B[k][c];
+                    row.push(sum);
+                }
+                res.push(row);
+            }
+            return res;
+        }
+
+        // Initialize App
+        function init() { loadExample(); }
+
+        // Theme Toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const btn = document.getElementById('themeToggle');
+            if (html.getAttribute('data-theme') === 'light') {
+                html.setAttribute('data-theme', 'dark');
+                btn.innerHTML = '☀️ Light Mode';
+            } else {
+                html.setAttribute('data-theme', 'light');
+                btn.innerHTML = '🌙 Dark Mode';
+            }
+        }
+
+        function loadExample() {
+            const val = document.getElementById('exampleSelect').value;
+            let rawA = examples[val].A;
+            let rawB = examples[val].B;
+            
+            originalSize = rawA.length;
+            paddedSize = originalSize > 2 ? 4 : 2;
+            qSize = paddedSize / 2;
+
+            currentData.A = padMatrix(rawA, paddedSize);
+            currentData.B = padMatrix(rawB, paddedSize);
+            
+            calculateAnswers();
+            resetUI();
+        }
+
+        function calculateAnswers() {
+            const A = currentData.A;
+            const B = currentData.B;
+            
+            const A11 = getQuadrant(A, 0, 0), A12 = getQuadrant(A, 0, 1), A21 = getQuadrant(A, 1, 0), A22 = getQuadrant(A, 1, 1);
+            const B11 = getQuadrant(B, 0, 0), B12 = getQuadrant(B, 0, 1), B21 = getQuadrant(B, 1, 0), B22 = getQuadrant(B, 1, 1);
+            
+            const p1 = matMul(A11, matSub(B12, B22));
+            const p2 = matMul(matAdd(A11, A12), B22);
+            const p3 = matMul(matAdd(A21, A22), B11);
+            const p4 = matMul(A22, matSub(B21, B11));
+            const p5 = matMul(matAdd(A11, A22), matAdd(B11, B22));
+            const p6 = matMul(matSub(A12, A22), matAdd(B21, B22));
+            const p7 = matMul(matSub(A11, A21), matAdd(B11, B12));
+
+            currentData.P = [p1, p2, p3, p4, p5, p6, p7];
+
+            const C11 = matAdd(matSub(matAdd(p5, p4), p2), p6); 
+            const C12 = matAdd(p1, p2);                         
+            const C21 = matAdd(p3, p4);                         
+            const C22 = matSub(matSub(matAdd(p5, p1), p3), p7); 
+
+            currentData.C = [];
+            for (let i = 0; i < paddedSize; i++) currentData.C.push(new Array(paddedSize).fill(0));
+            setQuadrantToC(0, 0, C11);
+            setQuadrantToC(0, 1, C12);
+            setQuadrantToC(1, 0, C21);
+            setQuadrantToC(1, 1, C22);
+        }
+
+        function setQuadrantToC(rIdx, cIdx, quad) {
+            for (let r = 0; r < qSize; r++) {
+                for (let c = 0; c < qSize; c++) {
+                    currentData.C[rIdx * qSize + r][cIdx * qSize + c] = quad[r][c];
+                }
+            }
+        }
+
+        function renderGrid(containerId, prefix, matrixData, isC = false) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            container.style.gridTemplateColumns = `repeat(${paddedSize}, 1fr)`;
+
+            // Insert distinct physical cross dividers to separate the 4x4 matrix exactly into four 2x2s
+            if (paddedSize === 4) {
+                const crossV = document.createElement('div');
+                crossV.className = 'quad-divider-v';
+                container.appendChild(crossV);
+
+                const crossH = document.createElement('div');
+                crossH.className = 'quad-divider-h';
+                container.appendChild(crossH);
+            }
+
+            for (let r = 0; r < paddedSize; r++) {
+                for (let c = 0; c < paddedSize; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = `cell ${paddedSize === 4 ? 'cell-4x4' : 'cell-2x2'}`;
+
+                    // Faded dashed visuals for completely padded rows/cols
+                    if (r >= originalSize || c >= originalSize) {
+                        cell.classList.add('padded-cell');
+                    }
+
+                    cell.id = `${prefix}_${r}_${c}`;
+                    
+                    if (isC) {
+                        cell.innerHTML = `?<sub style="font-size: 0.6em;">${r+1}${c+1}</sub>`;
+                    } else {
+                        cell.innerText = matrixData[r][c];
+                    }
+
+                    container.appendChild(cell);
+                }
+            }
+        }
+
+        function resetUI() {
+            currentStep = 0;
+            renderGrid('matrixA', 'a', currentData.A);
+            renderGrid('matrixB', 'b', currentData.B);
+            renderGrid('matrixC', 'c', currentData.C, true);
+
+            for (let i = 1; i <= 7; i++) {
+                document.getElementById(`p${i}-val`).innerHTML = '-';
+                document.getElementById(`p${i}`).classList.remove('active');
+            }
+
+            clearHighlights();
+            let bannerTxt = "Step 0: Matrices loaded. Ready to begin Strassen's multiplications.";
+            if (paddedSize > originalSize) {
+                bannerTxt = `Step 0: The ${originalSize}x${originalSize} matrix was padded with zeros to ${paddedSize}x${paddedSize}. Notice the dashed cross separating the four 2x2 matrices!`;
+            }
+            updateBanner(bannerTxt);
+            
+            document.getElementById('calcTitle').innerText = "Ready to Begin";
+            document.getElementById('calcFormulaSym').innerHTML = `<span class="math-sym" style="font-weight: normal; text-align: center;">Click "Next Step" to begin calculations.</span>`;
+            document.getElementById('calcFormulaVal').innerHTML = "";
+            document.getElementById('nextBtn').disabled = false;
+        }
+
+        function reset() { loadExample(); }
+
+        function highlightQuad(prefix, rIdx, cIdx) {
+            for (let r = 0; r < qSize; r++) {
+                for (let c = 0; c < qSize; c++) {
+                    const el = document.getElementById(`${prefix}_${rIdx * qSize + r}_${cIdx * qSize + c}`);
+                    if (el) el.classList.add('highlight');
+                }
+            }
+        }
+
+        function highlightMultipleQuads(quadList) {
+            quadList.forEach(q => {
+                if(q.type === 'p') document.getElementById(`p${q.idx}`).classList.add('highlight');
+                else highlightQuad(q.type, q.r, q.c);
+            });
+        }
+
+        function getMatrixHTML(mat, colorVar) {
+            if (qSize === 1) { 
+                return `<span class="im-font-large" style="color: var(${colorVar}); font-weight: bold;">${mat[0][0]}</span>`;
+            }
+            const cols = mat[0].length;
+            let html = `<div class="inline-matrix" style="color: var(${colorVar}); grid-template-columns: repeat(${cols}, 1fr);">`;
+            for (let r=0; r<mat.length; r++) {
+                for (let c=0; c<mat[0].length; c++) {
+                    html += `<div class="im-cell">${mat[r][c]}</div>`;
+                }
+            }
+            html += `</div>`;
+            return html;
+        }
+
+        function nextStep() {
+            if (currentStep > 10) return;
+            const btn = document.getElementById('nextBtn');
+            btn.disabled = true;
+            clearHighlights();
+
+            const A = currentData.A, B = currentData.B, P = currentData.P;
+            
+            const valA = (r, c) => getMatrixHTML(getQuadrant(A, r, c), '--matrix-a-border');
+            const valB = (r, c) => getMatrixHTML(getQuadrant(B, r, c), '--matrix-b-border');
+            const valP = (idx) => getMatrixHTML(P[idx], '--text-main');
+
+            let title = "", symF = "", valF = "", highlights = [], banner = "";
+            const stepNum = currentStep + 1;
+
+            if (currentStep < 7) {
+                title = `Step ${stepNum}/11: Calculate Matrix Product P${stepNum}`;
+            } else {
+                const qName = ['C₁₁', 'C₁₂', 'C₂₁', 'C₂₂'];
+                title = `Step ${stepNum}/11: Reconstruct Quadrant ${qName[currentStep - 7]}`;
+            }
+
+            switch(currentStep) {
+                case 0:
+                    symF = `<span class="math-sym">P₁ = A₁₁</span> <span class="math-op">&times;</span> <span class="math-paren">(</span> <span class="math-sym">B₁₂ - B₂₂</span> <span class="math-paren">)</span>`;
+                    valF = `<span class="math-sym">P₁ = </span> ${valA(0,0)} <span class="math-op">&times;</span> <span class="math-paren">(</span> ${valB(0,1)} <span class="math-op">-</span> ${valB(1,1)} <span class="math-paren">)</span> <span class="math-op">=</span> ${valP(0)}`;
+                    highlights = [{type:'a', r:0, c:0}, {type:'b', r:0, c:1}, {type:'b', r:1, c:1}];
+                    banner = "P₁ multiplies the top-left A block with the difference of B's right column blocks.";
+                    animateP(1, P[0]); break;
+                case 1:
+                    symF = `<span class="math-sym">P₂ =</span> <span class="math-paren">(</span> <span class="math-sym">A₁₁ + A₁₂</span> <span class="math-paren">)</span> <span class="math-op">&times;</span> <span class="math-sym">B₂₂</span>`;
+                    valF = `<span class="math-sym">P₂ = </span> <span class="math-paren">(</span> ${valA(0,0)} <span class="math-op">+</span> ${valA(0,1)} <span class="math-paren">)</span> <span class="math-op">&times;</span> ${valB(1,1)} <span class="math-op">=</span> ${valP(1)}`;
+                    highlights = [{type:'a', r:0, c:0}, {type:'a', r:0, c:1}, {type:'b', r:1, c:1}];
+                    banner = "P₂ sums the top row of A and multiplies by the bottom right of B.";
+                    animateP(2, P[1]); break;
+                case 2:
+                    symF = `<span class="math-sym">P₃ =</span> <span class="math-paren">(</span> <span class="math-sym">A₂₁ + A₂₂</span> <span class="math-paren">)</span> <span class="math-op">&times;</span> <span class="math-sym">B₁₁</span>`;
+                    valF = `<span class="math-sym">P₃ = </span> <span class="math-paren">(</span> ${valA(1,0)} <span class="math-op">+</span> ${valA(1,1)} <span class="math-paren">)</span> <span class="math-op">&times;</span> ${valB(0,0)} <span class="math-op">=</span> ${valP(2)}`;
+                    highlights = [{type:'a', r:1, c:0}, {type:'a', r:1, c:1}, {type:'b', r:0, c:0}];
+                    banner = "P₃ adds the bottom row of A, multiplied by the first element of B.";
+                    animateP(3, P[2]); break;
+                case 3:
+                    symF = `<span class="math-sym">P₄ = A₂₂</span> <span class="math-op">&times;</span> <span class="math-paren">(</span> <span class="math-sym">B₂₁ - B₁₁</span> <span class="math-paren">)</span>`;
+                    valF = `<span class="math-sym">P₄ = </span> ${valA(1,1)} <span class="math-op">&times;</span> <span class="math-paren">(</span> ${valB(1,0)} <span class="math-op">-</span> ${valB(0,0)} <span class="math-paren">)</span> <span class="math-op">=</span> ${valP(3)}`;
+                    highlights = [{type:'a', r:1, c:1}, {type:'b', r:1, c:0}, {type:'b', r:0, c:0}];
+                    banner = "P₄ mirrors P₁ using the bottom right of A and left column of B.";
+                    animateP(4, P[3]); break;
+                case 4:
+                    symF = `<span class="math-sym">P₅ =</span> <span class="math-paren">(</span> <span class="math-sym">A₁₁ + A₂₂</span> <span class="math-paren">)</span> <span class="math-op">&times;</span> <span class="math-paren">(</span> <span class="math-sym">B₁₁ + B₂₂</span> <span class="math-paren">)</span>`;
+                    valF = `<span class="math-sym">P₅ = </span> <span class="math-paren">(</span> ${valA(0,0)} <span class="math-op">+</span> ${valA(1,1)} <span class="math-paren">)</span> <span class="math-op">&times;</span> <span class="math-paren">(</span> ${valB(0,0)} <span class="math-op">+</span> ${valB(1,1)} <span class="math-paren">)</span> <span class="math-op">=</span> ${valP(4)}`;
+                    highlights = [{type:'a', r:0, c:0}, {type:'a', r:1, c:1}, {type:'b', r:0, c:0}, {type:'b', r:1, c:1}];
+                    banner = "P₅ adds diagonals from both matrices before multiplying.";
+                    animateP(5, P[4]); break;
+                case 5:
+                    symF = `<span class="math-sym">P₆ =</span> <span class="math-paren">(</span> <span class="math-sym">A₁₂ - A₂₂</span> <span class="math-paren">)</span> <span class="math-op">&times;</span> <span class="math-paren">(</span> <span class="math-sym">B₂₁ + B₂₂</span> <span class="math-paren">)</span>`;
+                    valF = `<span class="math-sym">P₆ = </span> <span class="math-paren">(</span> ${valA(0,1)} <span class="math-op">-</span> ${valA(1,1)} <span class="math-paren">)</span> <span class="math-op">&times;</span> <span class="math-paren">(</span> ${valB(1,0)} <span class="math-op">+</span> ${valB(1,1)} <span class="math-paren">)</span> <span class="math-op">=</span> ${valP(5)}`;
+                    highlights = [{type:'a', r:0, c:1}, {type:'a', r:1, c:1}, {type:'b', r:1, c:0}, {type:'b', r:1, c:1}];
+                    banner = "P₆ uses the difference of A's right column and sum of B's bottom row.";
+                    animateP(6, P[5]); break;
+                case 6:
+                    symF = `<span class="math-sym">P₇ =</span> <span class="math-paren">(</span> <span class="math-sym">A₁₁ - A₂₁</span> <span class="math-paren">)</span> <span class="math-op">&times;</span> <span class="math-paren">(</span> <span class="math-sym">B₁₁ + B₁₂</span> <span class="math-paren">)</span>`;
+                    valF = `<span class="math-sym">P₇ = </span> <span class="math-paren">(</span> ${valA(0,0)} <span class="math-op">-</span> ${valA(1,0)} <span class="math-paren">)</span> <span class="math-op">&times;</span> <span class="math-paren">(</span> ${valB(0,0)} <span class="math-op">+</span> ${valB(0,1)} <span class="math-paren">)</span> <span class="math-op">=</span> ${valP(6)}`;
+                    highlights = [{type:'a', r:0, c:0}, {type:'a', r:1, c:0}, {type:'b', r:0, c:0}, {type:'b', r:0, c:1}];
+                    banner = "P₇ subtracts A's left column and multiplies by the sum of B's top row.";
+                    animateP(7, P[6]); break;
+                case 7:
+                    symF = `<span class="math-sym">C₁₁ = P₅ + P₄ - P₂ + P₆</span>`;
+                    valF = `<span class="math-sym">C₁₁ = </span> ${valP(4)} <span class="math-op">+</span> ${valP(3)} <span class="math-op">-</span> ${valP(1)} <span class="math-op">+</span> ${valP(5)} <span class="math-op">=</span> ${getMatrixHTML(getQuadrant(currentData.C, 0, 0), '--matrix-c-border')}`;
+                    highlights = [{type:'p', idx:5}, {type:'p', idx:4}, {type:'p', idx:2}, {type:'p', idx:6}];
+                    banner = "All 7 intermediate values calculated! Now constructing Result Matrix C.";
+                    animateC(0, 0); break;
+                case 8:
+                    symF = `<span class="math-sym">C₁₂ = P₁ + P₂</span>`;
+                    valF = `<span class="math-sym">C₁₂ = </span> ${valP(0)} <span class="math-op">+</span> ${valP(1)} <span class="math-op">=</span> ${getMatrixHTML(getQuadrant(currentData.C, 0, 1), '--matrix-c-border')}`;
+                    highlights = [{type:'p', idx:1}, {type:'p', idx:2}];
+                    banner = "C₁₂ is simply the sum of P₁ and P₂.";
+                    animateC(0, 1); break;
+                case 9:
+                    symF = `<span class="math-sym">C₂₁ = P₃ + P₄</span>`;
+                    valF = `<span class="math-sym">C₂₁ = </span> ${valP(2)} <span class="math-op">+</span> ${valP(3)} <span class="math-op">=</span> ${getMatrixHTML(getQuadrant(currentData.C, 1, 0), '--matrix-c-border')}`;
+                    highlights = [{type:'p', idx:3}, {type:'p', idx:4}];
+                    banner = "C₂₁ is the sum of P₃ and P₄.";
+                    animateC(1, 0); break;
+                case 10:
+                    symF = `<span class="math-sym">C₂₂ = P₅ + P₁ - P₃ - P₇</span>`;
+                    valF = `<span class="math-sym">C₂₂ = </span> ${valP(4)} <span class="math-op">+</span> ${valP(0)} <span class="math-op">-</span> ${valP(2)} <span class="math-op">-</span> ${valP(6)} <span class="math-op">=</span> ${getMatrixHTML(getQuadrant(currentData.C, 1, 1), '--matrix-c-border')}`;
+                    highlights = [{type:'p', idx:5}, {type:'p', idx:1}, {type:'p', idx:3}, {type:'p', idx:7}];
+                    banner = "Final quadrant! C₂₂ combines four P variables.";
+                    animateC(1, 1); break;
+            }
+
+            highlightMultipleQuads(highlights);
+            document.getElementById('calcTitle').innerText = title;
+            document.getElementById('calcFormulaSym').innerHTML = symF;
+            document.getElementById('calcFormulaVal').innerHTML = valF;
+            updateBanner(banner);
+
+            currentStep++;
+
+            setTimeout(() => {
+                if (currentStep > 10) openModal('completeModal');
+                else btn.disabled = false;
+                
+                // Keep panel in view if wrapped down on mobile
+                const panel = document.querySelector('.calc-panel');
+                if (window.innerWidth <= 768) {
+                    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }, ANIMATION_DELAY);
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+        }
+
+        function updateBanner(text) {
+            document.getElementById('bannerText').innerText = text;
+        }
+
+        function animateP(pIndex, quadData) {
+            setTimeout(() => {
+                const target = document.getElementById(`p${pIndex}-val`);
+                if (qSize === 1) {
+                    target.innerHTML = quadData[0][0];
+                } else {
+                    target.innerHTML = `<div class="p-matrix">
+                        <div>${quadData[0][0]}</div><div>${quadData[0][1]}</div>
+                        <div>${quadData[1][0]}</div><div>${quadData[1][1]}</div>
+                    </div>`;
+                }
+                document.getElementById(`p${pIndex}`).classList.add('active');
+            }, ANIMATION_DELAY / 2);
+        }
+
+        function animateC(rIdx, cIdx) {
+            setTimeout(() => {
+                for(let r = 0; r < qSize; r++) {
+                    for(let c = 0; c < qSize; c++) {
+                        const cell = document.getElementById(`c_${rIdx * qSize + r}_${cIdx * qSize + c}`);
+                        cell.innerText = currentData.C[rIdx * qSize + r][cIdx * qSize + c];
+                        cell.classList.remove('empty');
+                        cell.classList.add('highlight');
+                    }
+                }
+            }, ANIMATION_DELAY / 2);
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        window.onload = init;
+    </script>
+</body>
+</html>

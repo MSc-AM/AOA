@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boolean Matrix Multiplication</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc; /* Very light slate */
+            --panel-bg: #ffffff; /* Pure white */
+            --text-main: #1e293b; /* Dark slate */
+            --color-a: #2563eb; /* Strong Blue */
+            --color-a-light: #3b82f6;
+            --color-b: #059669; /* Strong Green */
+            --color-b-light: #10b981;
+            --color-c: #7c3aed; /* Strong Purple */
+            --color-c-light: #8b5cf6;
+            --color-highlight: #d97706; /* Amber/Orange for light bg */
+            --color-active: #e11d48; /* Rose */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            z-index: 10;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            background: linear-gradient(90deg, var(--color-a), var(--color-b), var(--color-c));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        select, button {
+            padding: 12px 24px;
+            font-size: 1.2rem;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        select {
+            background-color: var(--panel-bg);
+            color: var(--text-main);
+            border: 2px solid #cbd5e1;
+            outline: none;
+        }
+
+        select:focus {
+            border-color: var(--color-a);
+        }
+
+        button.primary {
+            background-color: var(--color-a);
+            color: white;
+            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
+        }
+
+        button.primary:hover:not(:disabled) {
+            background-color: var(--color-a-light);
+            transform: translateY(-2px);
+        }
+
+        button.primary:disabled {
+            background-color: #cbd5e1;
+            color: #64748b;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        button.secondary {
+            background-color: transparent;
+            color: var(--color-active);
+            border: 2px solid var(--color-active);
+        }
+
+        button.secondary:hover {
+            background-color: var(--color-active);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            width: 100%;
+            max-width: 1800px;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            padding: 20px;
+        }
+
+        .matrix-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .matrix-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .matrix-title.a { color: var(--color-a); }
+        .matrix-title.b { color: var(--color-b); }
+        .matrix-title.c { color: var(--color-c); }
+
+        .matrix {
+            display: grid;
+            gap: 12px;
+            padding: 25px;
+            background-color: var(--panel-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            position: relative;
+        }
+
+        /* Matrix brackets using pseudo elements */
+        .matrix::before, .matrix::after {
+            content: '';
+            position: absolute;
+            top: 10px; bottom: 10px;
+            width: 20px;
+            border: 4px solid #94a3b8;
+        }
+        .matrix::before { left: 0; border-right: none; border-radius: 10px 0 0 10px; }
+        .matrix::after { right: 0; border-left: none; border-radius: 0 10px 10px 0; }
+
+        .cell {
+            width: 80px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            border-radius: 10px;
+            background-color: rgba(0, 0, 0, 0.02);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 2;
+        }
+
+        .operator {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #64748b;
+            margin-top: 40px;
+        }
+
+        /* Colors for Matrices */
+        .cell.matrix-a { background-color: rgba(37, 99, 235, 0.08); border: 2px solid rgba(37, 99, 235, 0.3); color: var(--color-a); }
+        .cell.matrix-b { background-color: rgba(5, 150, 105, 0.08); border: 2px solid rgba(5, 150, 105, 0.3); color: var(--color-b); }
+        .cell.matrix-c { background-color: rgba(124, 58, 237, 0.05); border: 2px dashed rgba(124, 58, 237, 0.3); color: transparent; }
+
+        /* Highlight States */
+        .cell.matrix-a.highlight-row {
+            background-color: var(--color-a);
+            box-shadow: 0 0 20px rgba(37, 99, 235, 0.4);
+            transform: scale(1.1);
+            z-index: 5;
+            border-color: var(--color-a);
+            color: white;
+        }
+
+        .cell.matrix-b.highlight-col {
+            background-color: var(--color-b);
+            box-shadow: 0 0 20px rgba(5, 150, 105, 0.4);
+            transform: scale(1.1);
+            z-index: 5;
+            border-color: var(--color-b);
+            color: white;
+        }
+
+        .cell.matrix-c.calculating {
+            border: 3px solid var(--color-highlight);
+            box-shadow: 0 0 25px rgba(217, 119, 6, 0.3);
+            background-color: rgba(217, 119, 6, 0.1);
+            transform: scale(1.1);
+        }
+
+        .cell.matrix-c.filled {
+            background-color: var(--color-c);
+            border: 2px solid var(--color-c);
+            box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
+            color: white;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Calculation Panel */
+        .calculation-panel {
+            width: 90%;
+            height: 250px;
+            background-color: var(--panel-bg);
+            border-top: 4px solid #e2e8f0;
+            border-radius: 20px 20px 0 0;
+            padding: 30px 50px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.05);
+        }
+
+        .calc-step {
+            font-size: 2.2rem;
+            margin: 10px 0;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .calc-step.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .calc-target {
+            color: var(--color-c);
+            font-weight: bold;
+        }
+
+        .txt-a { color: var(--color-a); font-weight: bold; }
+        .txt-b { color: var(--color-b); font-weight: bold; }
+        .op-and { color: var(--color-highlight); font-size: 1.8rem; font-weight: bold; }
+        .op-or { color: var(--color-active); font-size: 1.8rem; font-weight: bold; }
+        .txt-res { color: var(--color-c); font-weight: bold; font-size: 2.8rem; }
+        .txt-eval { color: var(--text-main); font-weight: bold; }
+
+        /* Status Overlay */
+        #status-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px 80px;
+            border-radius: 20px;
+            border: 4px solid var(--color-c);
+            box-shadow: 0 0 50px rgba(124, 58, 237, 0.2);
+            z-index: 100;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #status-overlay.active {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+            pointer-events: all;
+        }
+
+        #status-overlay h2 {
+            font-size: 4rem;
+            color: var(--color-c);
+            margin-bottom: 20px;
+        }
+
+        /* --- NEW CSS FOR PDF INTEGRATION --- */
+        .context-banner {
+            width: 90%;
+            background-color: rgba(37, 99, 235, 0.05);
+            border-left: 5px solid var(--color-a);
+            padding: 15px 25px;
+            margin: 10px 0;
+            border-radius: 0 10px 10px 0;
+            font-size: 1.3rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .context-banner i {
+            font-size: 1.8rem;
+            color: var(--color-highlight);
+        }
+
+        /* Theory Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(241, 245, 249, 0.85);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal-content {
+            background: var(--panel-bg);
+            width: 80%;
+            max-width: 900px;
+            max-height: 85vh;
+            overflow-y: auto;
+            border-radius: 15px;
+            border: 2px solid var(--color-c);
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        .modal-close {
+            position: absolute;
+            top: 20px; right: 25px;
+            font-size: 2rem;
+            color: #94a3b8;
+            cursor: pointer;
+            background: none; border: none;
+        }
+        .modal-close:hover { color: #0f172a; }
+        .theory-section { margin-bottom: 30px; }
+        .theory-section h3 { color: var(--color-a); font-size: 1.8rem; margin-bottom: 15px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .theory-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .theory-box { background: rgba(0,0,0,0.02); padding: 20px; border-radius: 10px; border-left: 4px solid var(--color-b); }
+        .theory-box h4 { color: var(--color-b); font-size: 1.4rem; margin-bottom: 10px; }
+        .theory-box p { font-size: 1.2rem; line-height: 1.6; color: #334155; margin-bottom: 8px;}
+        .pro-tip { background: rgba(217, 119, 6, 0.05); border-left: 4px solid var(--color-highlight); padding: 20px; border-radius: 10px; margin-top: 20px; }
+        .pro-tip h4 { color: var(--color-highlight); font-size: 1.4rem; margin-bottom: 10px; }
+        .pro-tip p { font-size: 1.2rem; line-height: 1.6; color: #334155;}
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Boolean Matrix Multiplication</h1>
+        <div class="controls">
+            <button id="btn-theory" class="secondary" style="border-color: var(--color-c-light); color: var(--color-c-light);">📖 Read PDF Notes</button>
+            <select id="level-select">
+                <optgroup label="From PDF Notes">
+                    <option value="basic_intro">Basic: Introduction (2×3 and 3×2)</option>
+                    <option value="moderate_3x3">Moderate: 3×3 Matrices</option>
+                    <option value="moderate_square">Moderate: Squaring a Matrix (M²)</option>
+                    <option value="adv_shortcut">Advanced: The Shortcut Rule</option>
+                    <option value="adv_graph">Advanced: Graph Theory (Paths)</option>
+                </optgroup>
+                <optgroup label="Test Your Skills">
+                    <option value="practice_q1">Q1: The 3×3 Challenge</option>
+                    <option value="practice_q4">Q4: 4×4 Flight Connections</option>
+                </optgroup>
+            </select>
+            <button id="btn-next" class="primary">Next Step</button>
+            <button id="btn-reset" class="secondary">Reset</button>
+        </div>
+    </header>
+
+    <div class="context-banner" id="context-banner">
+        <span>ℹ️</span>
+        <span id="context-text">Loading description...</span>
+    </div>
+
+    <main>
+        <div class="matrix-wrapper">
+            <div class="matrix-title a">Matrix A</div>
+            <div id="matrix-a" class="matrix"></div>
+        </div>
+        
+        <div class="operator">⊗</div>
+        
+        <div class="matrix-wrapper">
+            <div class="matrix-title b">Matrix B</div>
+            <div id="matrix-b" class="matrix"></div>
+        </div>
+        
+        <div class="operator">=</div>
+        
+        <div class="matrix-wrapper">
+            <div class="matrix-title c">Matrix C</div>
+            <div id="matrix-c" class="matrix"></div>
+        </div>
+    </main>
+
+    <div class="calculation-panel">
+        <div id="calc-line-1" class="calc-step">
+            <!-- E.g., C[0][0] = (1 AND 0) OR (0 AND 1) -->
+        </div>
+        <div id="calc-line-2" class="calc-step">
+            <!-- E.g., C[0][0] = 0 OR 0 -->
+        </div>
+        <div id="calc-line-3" class="calc-step">
+            <!-- E.g., C[0][0] = 0 -->
+        </div>
+    </div>
+
+    <div id="status-overlay">
+        <h2>Multiplication Complete!</h2>
+        <button id="btn-restart-overlay" class="primary" style="font-size: 1.5rem;">Try Another Example</button>
+    </div>
+
+    <!-- Theory Modal (From PDF Notes) -->
+    <div class="modal-overlay" id="theory-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="btn-close-modal">&times;</button>
+            <div class="theory-section">
+                <h3>1. The Rules of Boolean Arithmetic</h3>
+                <p style="font-size: 1.2rem; margin-bottom: 15px;">Forget regular math! We use <strong>Logical OR (∨)</strong> for addition and <strong>Logical AND (∧)</strong> for multiplication.</p>
+                <div class="theory-grid">
+                    <div class="theory-box">
+                        <h4>Boolean Addition (Logical OR - ∨)</h4>
+                        <p><em>"Is at least one of them a 1?"</em></p>
+                        <p>0 ∨ 0 = 0</p>
+                        <p>0 ∨ 1 = 1</p>
+                        <p>1 ∨ 0 = 1</p>
+                        <p style="color: var(--color-highlight); font-weight: bold;">1 ∨ 1 = 1 (1+1 isn't 2, it's just 1)</p>
+                    </div>
+                    <div class="theory-box">
+                        <h4>Boolean Multiplication (Logical AND - ∧)</h4>
+                        <p><em>"Are both of them 1?"</em></p>
+                        <p>0 ∧ 0 = 0</p>
+                        <p>0 ∧ 1 = 0</p>
+                        <p>1 ∧ 0 = 0</p>
+                        <p style="color: var(--color-highlight); font-weight: bold;">1 ∧ 1 = 1</p>
+                    </div>
+                </div>
+            </div>
+            <div class="theory-section">
+                <h3>2. The Boolean Product (A ⊙ B)</h3>
+                <p style="font-size: 1.2rem; line-height: 1.6;">
+                    Multiply exactly like regular matrices (rows of A dive into columns of B), BUT replace:<br>
+                    → Regular multiplication (×) with <strong style="color: var(--color-highlight);">Logical AND (∧)</strong><br>
+                    → Regular addition (+) with <strong style="color: var(--color-active);">Logical OR (∨)</strong><br><br>
+                    <em>Requirement:</em> The number of columns in Matrix A must equal the number of rows in Matrix B.
+                </p>
+            </div>
+            <div class="pro-tip">
+                <h4>⭐ Pro-Tip: The "Shortcut" Rule</h4>
+                <p>When calculating an element using the OR (∨) operation, <strong>as soon as you find one pair that evaluates to 1 (like 1 ∧ 1), the whole calculation will be 1!</strong> You don't even need to check the rest of the numbers.</p>
+            </div>
+            <div class="pro-tip" style="border-left-color: var(--color-c-light); background: rgba(139, 92, 246, 0.1);">
+                <h4 style="color: var(--color-c-light);">Graph Theory Application</h4>
+                <p>Boolean matrices are used to compute paths in graphs. If you multiply an adjacency matrix by itself (A ⊙ A), the result tells you if there is a path of length 2 between any two nodes!</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Definitions
+        const levels = {
+            basic_intro: {
+                A: [[1, 0, 1], [0, 1, 0]],
+                B: [[0, 1], [1, 0], [0, 1]],
+                desc: "Step 1: A is a 2×3 matrix and B is a 3×2 matrix. The inner numbers match, so we can multiply! The result C will be 2×2."
+            },
+            moderate_3x3: {
+                A: [[1, 1, 0], [0, 1, 1], [1, 0, 0]],
+                B: [[0, 1, 0], [1, 0, 0], [0, 1, 1]],
+                desc: "Moderate Example: Let's multiply two 3×3 matrices, exactly as outlined in Section 5 of the notes."
+            },
+            moderate_square: {
+                A: [[1, 1, 0], [0, 1, 1], [0, 0, 1]],
+                B: [[1, 1, 0], [0, 1, 1], [0, 0, 1]],
+                desc: "Moderate Example: Squaring a Matrix (M ⊙ M). Notice how the 1s 'spread' upwards. This relates to Transitive Closure!"
+            },
+            adv_shortcut: {
+                A: [[1, 1, 1], [1, 0, 1]],
+                B: [[1, 0, 1, 1], [0, 1, 0, 1], [1, 1, 1, 0]],
+                desc: "Advanced Example: The Shortcut Rule. Matrix A has many 1s. If an OR operation hits a 1, the whole result is 1!"
+            },
+            adv_graph: {
+                A: [[0, 1, 1], [0, 0, 1], [0, 0, 0]],
+                B: [[0, 1, 1], [0, 0, 1], [0, 0, 0]],
+                desc: "Advanced Example: Graph Theory. A is a 1-way flight map. A² tells us valid 2-flight journeys (e.g., City 1 → City 2 → City 3)."
+            },
+            practice_q1: {
+                A: [[1, 0, 1], [0, 1, 1], [1, 0, 0]],
+                B: [[0, 1, 0], [1, 0, 1], [1, 1, 0]],
+                desc: "Practice Q1 (The 3×3 Challenge): Find the Boolean product of these two matrices."
+            },
+            practice_q4: {
+                A: [[0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0]],
+                B: [[0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1], [1, 0, 0, 0]],
+                desc: "Practice Q4 (Graph Theory): Adjacency matrix for 4 cities. Calculate M² to find flight connections with exactly 1 layover."
+            }
+        };
+
+        // State Variables
+        let currentLevel = 'basic_intro';
+        let matA = [];
+        let matB = [];
+        let matC = [];
+        let currentStep = 0;
+        let totalSteps = 0;
+        let isAnimating = false;
+
+        // DOM Elements
+        const matrixAContainer = document.getElementById('matrix-a');
+        const matrixBContainer = document.getElementById('matrix-b');
+        const matrixCContainer = document.getElementById('matrix-c');
+        const btnNext = document.getElementById('btn-next');
+        const btnReset = document.getElementById('btn-reset');
+        const levelSelect = document.getElementById('level-select');
+        const calcLine1 = document.getElementById('calc-line-1');
+        const calcLine2 = document.getElementById('calc-line-2');
+        const calcLine3 = document.getElementById('calc-line-3');
+        const statusOverlay = document.getElementById('status-overlay');
+        const btnRestartOverlay = document.getElementById('btn-restart-overlay');
+        const contextText = document.getElementById('context-text');
+        const btnTheory = document.getElementById('btn-theory');
+        const theoryModal = document.getElementById('theory-modal');
+        const btnCloseModal = document.getElementById('btn-close-modal');
+
+        // Initialization
+        function init() {
+            matA = levels[currentLevel].A;
+            matB = levels[currentLevel].B;
+            
+            // Update description from notes
+            contextText.innerText = levels[currentLevel].desc;
+
+            const rowsA = matA.length;
+            const colsB = matB[0].length;
+            
+            totalSteps = rowsA * colsB;
+            currentStep = 0;
+            isAnimating = false;
+            
+            // Initialize empty Matrix C
+            matC = Array(rowsA).fill().map(() => Array(colsB).fill(0));
+
+            renderMatrices();
+            resetUI();
+        }
+
+        // Render Matrices
+        function renderMatrices() {
+            const size = matA.length;
+            
+            // Set Grid Columns based on dimension
+            matrixAContainer.style.gridTemplateColumns = `repeat(${matA[0].length}, 1fr)`;
+            matrixBContainer.style.gridTemplateColumns = `repeat(${matB[0].length}, 1fr)`;
+            matrixCContainer.style.gridTemplateColumns = `repeat(${matC[0].length}, 1fr)`;
+
+            // Adjust cell sizes dynamically based on matrix dimensions to always fill screen nicely
+            const maxDim = Math.max(matA.length, matA[0].length, matB.length, matB[0].length);
+            let cellSize = '120px';
+            if (maxDim === 3) cellSize = '100px';
+            if (maxDim >= 4) cellSize = '75px';
+
+            matrixAContainer.innerHTML = '';
+            matrixBContainer.innerHTML = '';
+            matrixCContainer.innerHTML = '';
+
+            for (let i = 0; i < matA.length; i++) {
+                for (let j = 0; j < matA[0].length; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell matrix-a';
+                    cell.id = `a-${i}-${j}`;
+                    cell.style.width = cellSize;
+                    cell.style.height = cellSize;
+                    cell.innerText = matA[i][j];
+                    matrixAContainer.appendChild(cell);
+                }
+            }
+
+            for (let i = 0; i < matB.length; i++) {
+                for (let j = 0; j < matB[0].length; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell matrix-b';
+                    cell.id = `b-${i}-${j}`;
+                    cell.style.width = cellSize;
+                    cell.style.height = cellSize;
+                    cell.innerText = matB[i][j];
+                    matrixBContainer.appendChild(cell);
+                }
+            }
+
+            for (let i = 0; i < matC.length; i++) {
+                for (let j = 0; j < matC[0].length; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell matrix-c';
+                    cell.id = `c-${i}-${j}`;
+                    cell.style.width = cellSize;
+                    cell.style.height = cellSize;
+                    cell.innerText = '?';
+                    matrixCContainer.appendChild(cell);
+                }
+            }
+        }
+
+        // Reset UI Elements
+        function resetUI() {
+            clearHighlights();
+            calcLine1.className = 'calc-step';
+            calcLine2.className = 'calc-step';
+            calcLine3.className = 'calc-step';
+            calcLine1.innerHTML = '';
+            calcLine2.innerHTML = '';
+            calcLine3.innerHTML = '';
+            btnNext.disabled = false;
+            btnNext.innerText = "Next Step";
+            statusOverlay.classList.remove('active');
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.cell').forEach(el => {
+                el.classList.remove('highlight-row', 'highlight-col', 'calculating');
+            });
+        }
+
+        // Perform the Next Step Calculation and Animation
+        function doNextStep() {
+            if (isAnimating || currentStep >= totalSteps) return;
+            
+            isAnimating = true;
+            btnNext.disabled = true;
+
+            const colsB = matB[0].length;
+            const size = matA[0].length; // Inner dimension
+            const r = Math.floor(currentStep / colsB);
+            const c = currentStep % colsB;
+
+            // 1. Highlight Matrices
+            clearHighlights();
+            
+            for (let k = 0; k < size; k++) {
+                document.getElementById(`a-${r}-${k}`).classList.add('highlight-row');
+                document.getElementById(`b-${k}-${c}`).classList.add('highlight-col');
+            }
+
+            const targetCell = document.getElementById(`c-${r}-${c}`);
+            targetCell.classList.add('calculating');
+
+            // 2. Generate Calculation Strings
+            let html1 = `<span class="calc-target">C<sub>${r+1},${c+1}</sub></span> = `;
+            let html2 = `<span class="calc-target">C<sub>${r+1},${c+1}</sub></span> = `;
+            let html3 = `<span class="calc-target">C<sub>${r+1},${c+1}</sub></span> = `;
+            
+            let finalVal = 0;
+
+            for (let k = 0; k < size; k++) {
+                let valA = matA[r][k];
+                let valB = matB[k][c];
+                let andRes = valA & valB;
+                finalVal = finalVal | andRes;
+
+                html1 += `(<span class="txt-a">${valA}</span> <span class="op-and">AND(∧)</span> <span class="txt-b">${valB}</span>)`;
+                html2 += `<span class="txt-eval">${andRes}</span>`;
+
+                if (k < size - 1) {
+                    html1 += ` <span class="op-or">OR(∨)</span> `;
+                    html2 += ` <span class="op-or">OR(∨)</span> `;
+                }
+            }
+            
+            html3 += `<span class="txt-res">${finalVal}</span>`;
+            matC[r][c] = finalVal; // Save to state
+
+            // 3. Animation Sequence Execution
+            
+            // Hide previous text
+            calcLine1.classList.remove('visible');
+            calcLine2.classList.remove('visible');
+            calcLine3.classList.remove('visible');
+
+            setTimeout(() => {
+                calcLine1.innerHTML = html1;
+                calcLine1.classList.add('visible');
+            }, 300);
+
+            setTimeout(() => {
+                calcLine2.innerHTML = html2;
+                calcLine2.classList.add('visible');
+            }, 1500);
+
+            setTimeout(() => {
+                calcLine3.innerHTML = html3;
+                calcLine3.classList.add('visible');
+                
+                // Update Target Cell Visuals
+                targetCell.classList.remove('calculating');
+                targetCell.classList.add('filled');
+                targetCell.innerText = finalVal;
+            }, 2700);
+
+            // Finish Sequence
+            setTimeout(() => {
+                currentStep++;
+                isAnimating = false;
+                
+                if (currentStep >= totalSteps) {
+                    btnNext.innerText = "Completed";
+                    setTimeout(() => statusOverlay.classList.add('active'), 800);
+                } else {
+                    btnNext.disabled = false;
+                }
+            }, 3200);
+        }
+
+        // Event Listeners
+        btnNext.addEventListener('click', doNextStep);
+        
+        btnReset.addEventListener('click', () => {
+            init();
+        });
+
+        levelSelect.addEventListener('change', (e) => {
+            currentLevel = e.target.value;
+            init();
+        });
+
+        btnRestartOverlay.addEventListener('click', () => {
+            init();
+        });
+
+        // Modal Logic
+        btnTheory.addEventListener('click', () => {
+            theoryModal.classList.add('active');
+        });
+
+        btnCloseModal.addEventListener('click', () => {
+            theoryModal.classList.remove('active');
+        });
+
+        theoryModal.addEventListener('click', (e) => {
+            if (e.target === theoryModal) theoryModal.classList.remove('active');
+        });
+
+        // Bootstrap App
+        init();
+
+    </script>
+</body>
+</html>
