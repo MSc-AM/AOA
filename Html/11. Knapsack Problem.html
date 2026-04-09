@@ -27,10 +27,12 @@
         .highlight-calc {
             background-color: #fef08a !important; /* Yellow 200 */
             transition: background-color 0.3s;
+            color: black !important;
         }
         .highlight-success {
             background-color: #bbf7d0 !important; /* Green 200 */
             transition: background-color 0.3s;
+            border: 2px solid #16a34a !important; /* Green 600 */
         }
         .highlight-dependency {
             background-color: #bfdbfe !important; /* Blue 200 */
@@ -59,27 +61,30 @@
 
     <!-- Header & Tabs -->
     <header class="bg-blue-800 text-white shadow-md z-10">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+        <div class="w-full mx-auto px-4 lg:px-8 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold">Knapsack Algorithms</h1>
                 <p class="text-sm text-blue-200">Exam-Ready Notes Based on Jenny's Lectures</p>
             </div>
-            <div class="mt-4 md:mt-0 flex space-x-2 bg-blue-900 p-1 rounded-lg">
-                <button id="btn-fractional" onclick="switchTab('fractional')" class="px-4 py-2 rounded-md bg-white text-blue-800 font-bold shadow transition">
+            <div class="flex flex-wrap gap-2 bg-blue-900 p-1 rounded-lg">
+                <button id="btn-fractional" onclick="switchTab('fractional')" class="px-4 py-2 rounded-md bg-white text-blue-800 font-bold shadow transition text-sm">
                     Fractional (Greedy)
                 </button>
-                <button id="btn-dp" onclick="switchTab('dp')" class="px-4 py-2 rounded-md text-white hover:bg-blue-700 font-semibold transition">
-                    0/1 Knapsack (DP)
+                <button id="btn-dp1" onclick="switchTab('dp1')" class="px-4 py-2 rounded-md text-white hover:bg-blue-700 font-semibold transition text-sm">
+                    0/1 DP (Q1)
+                </button>
+                <button id="btn-dp2" onclick="switchTab('dp2')" class="px-4 py-2 rounded-md text-white hover:bg-blue-700 font-semibold transition text-sm">
+                    0/1 DP (Q2: Traceback)
                 </button>
             </div>
         </div>
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex-grow flex flex-col md:flex-row overflow-hidden max-w-7xl mx-auto w-full p-4 gap-4">
+    <main class="flex-grow flex flex-col md:flex-row overflow-hidden w-full mx-auto p-4 lg:px-8 gap-4">
         
         <!-- Left Panel: Explanations -->
-        <div class="w-full md:w-1/3 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
+        <div class="w-full md:w-1/3 lg:w-1/4 xl:w-[22%] bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
             <div class="bg-gray-100 p-4 border-b border-gray-200 font-bold text-lg text-gray-700">
                 Concepts & Explanations
             </div>
@@ -89,7 +94,7 @@
         </div>
 
         <!-- Right Panel: Interactive Visualization -->
-        <div class="w-full md:w-2/3 bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
+        <div class="w-full md:w-2/3 lg:w-3/4 xl:w-[78%] bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col overflow-hidden">
             <div class="bg-gray-100 p-4 border-b border-gray-200 font-bold text-lg text-gray-700 flex justify-between items-center">
                 <span>Algorithm Execution</span>
                 <span id="step-counter" class="text-sm font-normal bg-blue-100 text-blue-800 px-3 py-1 rounded-full">Step 0 / 0</span>
@@ -106,10 +111,10 @@
                 </button>
                 <div class="space-x-2">
                     <button id="btn-prev" onclick="prevStep()" class="px-4 py-2 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 font-medium transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        &larr; Previous Step
+                        &larr; Prev
                     </button>
                     <button id="btn-next" onclick="nextStep()" class="px-6 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 font-bold shadow transition disabled:opacity-50 disabled:cursor-not-allowed">
-                        Next Step &rarr;
+                        Next &rarr;
                     </button>
                 </div>
             </div>
@@ -118,10 +123,10 @@
 
     <script>
         // --- DATA & STATE ---
-        let currentMode = 'fractional'; // 'fractional' or 'dp'
+        let currentMode = 'fractional'; // 'fractional', 'dp1', 'dp2'
         let currentStep = 0;
 
-        // Fractional Data (New Example)
+        // --- FRACTIONAL DATA ---
         const fracItems = [
             { id: 1, p: 10, w: 2, ratio: 5.00 },
             { id: 2, p: 15, w: 3, ratio: 5.00 },
@@ -131,10 +136,9 @@
             { id: 6, p: 18, w: 4, ratio: 4.50 },
             { id: 7, p: 10, w: 5, ratio: 2.00 }
         ];
-
         const fracSorted = [...fracItems].sort((a, b) => b.ratio - a.ratio);
 
-        // 0/1 DP Data (New Example)
+        // --- 0/1 DP (Q1) DATA ---
         const dpItems = [
             { id: 1, w: 2, p: 4 },
             { id: 2, w: 3, p: 5 },
@@ -142,7 +146,6 @@
             { id: 4, w: 7, p: 2 }
         ];
         const capacity = 8;
-        // Matrix: 5 rows (0-4), 9 cols (0-8)
         const dpMatrix = [
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 4, 4, 4, 4, 4, 4, 4],
@@ -150,6 +153,35 @@
             [0, 0, 4, 5, 5, 9, 10, 10, 14],
             [0, 0, 4, 5, 5, 9, 10, 10, 14]
         ];
+
+        // --- 0/1 DP (Q2) DATA (NEW QUESTION) ---
+        // Dynamically sorted by weight and matrix computed below to prevent hardcoding errors
+        const dpItems2 = [
+            { origId: 5, w: 1, p: 6 },
+            { origId: 1, w: 2, p: 10 },
+            { origId: 2, w: 3, p: 5 },
+            { origId: 6, w: 4, p: 18 },
+            { origId: 3, w: 5, p: 15 },
+            { origId: 7, w: 6, p: 3 },
+            { origId: 4, w: 7, p: 7 },
+            { origId: 8, w: 9, p: 19 }
+        ];
+        const capacity2 = 16;
+        const dpMatrix2 = Array(dpItems2.length + 1).fill().map(() => Array(capacity2 + 1).fill(0));
+        
+        // Dynamically compute the matrix for Q2
+        for (let i = 1; i <= dpItems2.length; i++) {
+            for (let w = 1; w <= capacity2; w++) {
+                if (dpItems2[i-1].w <= w) {
+                    dpMatrix2[i][w] = Math.max(
+                        dpMatrix2[i-1][w], 
+                        dpItems2[i-1].p + dpMatrix2[i-1][w - dpItems2[i-1].w]
+                    );
+                } else {
+                    dpMatrix2[i][w] = dpMatrix2[i-1][w];
+                }
+            }
+        }
 
         // --- STEP DEFINITIONS ---
 
@@ -306,7 +338,7 @@
             }
         ];
 
-        const dpSteps = [
+        const dp1Steps = [
             {
                 explain: `
                     <h3 class="font-bold text-lg mb-2 text-blue-800">0/1 Knapsack Problem</h3>
@@ -315,9 +347,9 @@
                     <br>
                     <h4 class="font-bold">Pre-Processing Step</h4>
                     <p>Always sort the items in ascending order of their weights before building the matrix.</p>
-                    <p><em>(Our items 2, 3, 6, 7 are already sorted by weight).</em></p>
+                    <p><em>(Our items 1, 2, 3, 4 are already sorted by weight).</em></p>
                 `,
-                render: () => renderDPMatrix(-1, -1, [])
+                render: () => renderDPMatrix(dpMatrix, dpItems, 8, -1, -1, [])
             },
             {
                 explain: `
@@ -332,7 +364,7 @@
                     </div>
                     <p class="mt-2 text-sm text-gray-600">First, we initialize row 0 and column 0 to 0.</p>
                 `,
-                render: () => renderDPMatrix(0, 8, []) // Show up to row 0
+                render: () => renderDPMatrix(dpMatrix, dpItems, 8, 0, 8, []) // Show up to row 0
             },
             {
                 explain: `
@@ -341,7 +373,7 @@
                     <p>For $w < 2$, we cannot pick the item, so we copy 0.</p>
                     <p>For $w \\ge 2$, we pick the item and get profit 4.</p>
                 `,
-                render: () => renderDPMatrix(1, 8, [])
+                render: () => renderDPMatrix(dpMatrix, dpItems, 8, 1, 8, [])
             },
             {
                 explain: `
@@ -353,7 +385,7 @@
                     $= \\max(4, 5 + 0) = 5$</p>
                     <p class="mt-2 text-sm"><em>Matrix calculates rest of row similarly...</em></p>
                 `,
-                render: () => renderDPMatrix(2, 8, [{r:2, c:4, type:'calc'}, {r:1, c:4, type:'dep'}, {r:1, c:1, type:'dep'}])
+                render: () => renderDPMatrix(dpMatrix, dpItems, 8, 2, 8, [{r:2, c:4, type:'calc'}, {r:1, c:4, type:'dep'}, {r:1, c:1, type:'dep'}])
             },
             {
                 explain: `
@@ -364,7 +396,7 @@
                     $M[3,8] = \\max(M[2,8], P_3 + M[2, 8-6])$<br>
                     $= \\max(9, 10 + 4) = 14$</p>
                 `,
-                render: () => renderDPMatrix(3, 8, [{r:3, c:8, type:'calc'}, {r:2, c:8, type:'dep'}, {r:2, c:2, type:'dep'}])
+                render: () => renderDPMatrix(dpMatrix, dpItems, 8, 3, 8, [{r:3, c:8, type:'calc'}, {r:2, c:8, type:'dep'}, {r:2, c:2, type:'dep'}])
             },
             {
                 explain: `
@@ -375,7 +407,7 @@
                     $M[4,7] = \\max(M[3,7], P_4 + M[3, 7-7])$<br>
                     $= \\max(10, 2 + 0) = 10$</p>
                 `,
-                render: () => renderDPMatrix(4, 8, [{r:4, c:7, type:'calc'}, {r:3, c:7, type:'dep'}, {r:3, c:0, type:'dep'}])
+                render: () => renderDPMatrix(dpMatrix, dpItems, 8, 4, 8, [{r:4, c:7, type:'calc'}, {r:3, c:7, type:'dep'}, {r:3, c:0, type:'dep'}])
             },
             {
                 explain: `
@@ -386,7 +418,7 @@
                     <p>Upper cell $M[3,8] = 14$. Value is the same.</p>
                     <p>&rarr; Item 4 is <strong>NOT</strong> selected. Move pointer up.</p>
                 `,
-                render: () => renderDPMatrix(4, 8, [{r:4, c:8, type:'skip'}, {r:3, c:8, type:'calc'}])
+                render: () => renderDPMatrix(dpMatrix, dpItems, 8, 4, 8, [{r:4, c:8, type:'skip'}, {r:3, c:8, type:'calc'}])
             },
             {
                 explain: `
@@ -397,7 +429,7 @@
                     <p>Remaining weight = $8 - W_3 = 8 - 6 = 2$.</p>
                     <p>Jump to remaining weight column in row above: <strong>$M[2,2]$</strong>.</p>
                 `,
-                render: () => renderDPMatrix(4, 8, [{r:3, c:8, type:'success'}, {r:2, c:8, type:'dep'}, {r:2, c:2, type:'calc'}])
+                render: () => renderDPMatrix(dpMatrix, dpItems, 8, 4, 8, [{r:3, c:8, type:'success'}, {r:2, c:8, type:'dep'}, {r:2, c:2, type:'calc'}])
             },
             {
                 explain: `
@@ -406,7 +438,7 @@
                     <p>Upper cell $M[1,2] = 4$. Value is the same.</p>
                     <p>&rarr; Item 2 is <strong>NOT</strong> selected. Move pointer up.</p>
                 `,
-                render: () => renderDPMatrix(4, 8, [{r:3, c:8, type:'success'}, {r:2, c:2, type:'skip'}, {r:1, c:2, type:'calc'}])
+                render: () => renderDPMatrix(dpMatrix, dpItems, 8, 4, 8, [{r:3, c:8, type:'success'}, {r:2, c:2, type:'skip'}, {r:1, c:2, type:'calc'}])
             },
             {
                 explain: `
@@ -417,7 +449,7 @@
                     <p>Remaining weight = $2 - W_1 = 2 - 2 = 0$.</p>
                     <p>Move to $M[0,0]$. We are done!</p>
                 `,
-                render: () => renderDPMatrix(4, 8, [{r:3, c:8, type:'success'}, {r:1, c:2, type:'success'}, {r:0, c:2, type:'dep'}, {r:0, c:0, type:'calc'}])
+                render: () => renderDPMatrix(dpMatrix, dpItems, 8, 4, 8, [{r:3, c:8, type:'success'}, {r:1, c:2, type:'success'}, {r:0, c:2, type:'dep'}, {r:0, c:0, type:'calc'}])
             },
             {
                 explain: `
@@ -426,7 +458,169 @@
                     <p><strong>Total Weight:</strong> $W_1 + W_3 = 2 + 6 = 8$ kg</p>
                     <p><strong>Maximum Profit:</strong> $P_1 + P_3 = 4 + 10 = 14$</p>
                 `,
-                render: () => renderDPMatrix(4, 8, [{r:3, c:8, type:'success'}, {r:1, c:2, type:'success'}])
+                render: () => renderDPMatrix(dpMatrix, dpItems, 8, 4, 8, [{r:3, c:8, type:'success'}, {r:1, c:2, type:'success'}])
+            }
+        ];
+
+        const dp2Steps = [
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Question 2: Advanced Backtracking</h3>
+                    <p><strong>Capacity $W = 16$.</strong> We have 8 items.</p>
+                    <p>Before building the matrix, we've <strong>sorted the items by weight</strong>. You can see their original IDs in the table under "Orig ID".</p>
+                    <p>Assuming you already know how to fill the matrix using the DP formula, the entire matrix has been pre-calculated for you.</p>
+                    <div class="bg-blue-50 p-3 rounded mt-2 border border-blue-100 text-sm">
+                        <strong>Goal:</strong> Students often struggle to identify the selected items. We will focus exclusively on how to trace back from the bottom-right corner ($M[8,16]$) to find exactly which items were selected for the optimal solution.
+                    </div>
+                `,
+                render: () => renderDPMatrix(dpMatrix2, dpItems2, capacity2, 8, 16, [])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">The Backtracking Rule</h3>
+                    <p>Start at the bottom right cell: <strong>$M[8, 16]$</strong>. The maximum profit is 54.</p>
+                    <p>Compare the current cell's value with the cell directly above it ($M[i-1, w]$).</p>
+                    <ul class="list-disc pl-5 mt-2 text-sm space-y-2">
+                        <li><strong class="text-red-600">If Value is SAME:</strong> It means the current item was <strong>not</strong> included. Move UP.</li>
+                        <li><strong class="text-green-600">If Value is DIFFERENT:</strong> It means the item <strong>was</strong> included! Subtract its weight from the current capacity, and move to that new column in the row above.</li>
+                    </ul>
+                `,
+                render: () => renderDPMatrix(dpMatrix2, dpItems2, capacity2, 8, 16, [ {r:8, c:16, type:'calc'}, {r:7, c:16, type:'dep'} ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Check Row 8 & 7</h3>
+                    <p><strong>Row 8:</strong> $M[8,16] = 54$. Cell above $M[7,16] = 54$. They are the same!</p>
+                    <p>&rarr; <span class="text-red-600 font-bold">Skip</span> Item 8 (Orig 8). Move to $M[7,16]$.</p>
+                    <p class="mt-3"><strong>Row 7:</strong> $M[7,16] = 54$. Cell above $M[6,16] = 54$. Same!</p>
+                    <p>&rarr; <span class="text-red-600 font-bold">Skip</span> Item 7 (Orig 4). Move to $M[6,16]$.</p>
+                `,
+                render: () => renderDPMatrix(dpMatrix2, dpItems2, capacity2, 8, 16, [ 
+                    {r:8, c:16, type:'skip'}, 
+                    {r:7, c:16, type:'skip'}, 
+                    {r:6, c:16, type:'calc'}, 
+                    {r:5, c:16, type:'dep'} 
+                ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Check Row 6 & 5</h3>
+                    <p><strong>Row 6:</strong> $M[6,16] = 54$. Cell above $M[5,16] = 54$. Same!</p>
+                    <p>&rarr; <span class="text-red-600 font-bold">Skip</span> Item 6 (Orig 7). Move to $M[5,16]$.</p>
+                    <div class="bg-green-50 border border-green-200 p-3 mt-3 rounded shadow-sm">
+                        <p><strong>Row 5:</strong> $M[5,16] = 54$. Cell above $M[4,16] = 39$. <strong>Different! ($54 \\ne 39$)</strong></p>
+                        <p class="mt-1">&rarr; <span class="text-green-600 font-bold text-lg">Select</span> Item 5 (Orig 3).</p>
+                        <p class="text-sm mt-2 text-gray-600">Remaining weight = $16 - W_5 = 16 - 5 = 11$.</p>
+                        <p class="text-sm text-gray-600">Jump to Row 4, Col 11: <strong>$M[4,11]$</strong>.</p>
+                    </div>
+                `,
+                render: () => renderDPMatrix(dpMatrix2, dpItems2, capacity2, 8, 16, [ 
+                    {r:6, c:16, type:'skip'}, 
+                    {r:5, c:16, type:'success'}, 
+                    {r:4, c:16, type:'dep'},
+                    {r:4, c:11, type:'calc'} 
+                ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Check Row 4</h3>
+                    <div class="bg-green-50 border border-green-200 p-3 mt-2 rounded shadow-sm">
+                        <p><strong>Row 4:</strong> Check $M[4,11] = 39$. Cell above $M[3,11] = 21$. <strong>Different!</strong></p>
+                        <p class="mt-1">&rarr; <span class="text-green-600 font-bold text-lg">Select</span> Item 4 (Orig 6).</p>
+                        <p class="text-sm mt-2 text-gray-600">Remaining weight = $11 - W_4 = 11 - 4 = 7$.</p>
+                        <p class="text-sm text-gray-600">Jump to Row 3, Col 7: <strong>$M[3,7]$</strong>.</p>
+                    </div>
+                `,
+                render: () => renderDPMatrix(dpMatrix2, dpItems2, capacity2, 8, 16, [ 
+                    {r:5, c:16, type:'success'}, 
+                    {r:4, c:11, type:'success'}, 
+                    {r:3, c:11, type:'dep'},
+                    {r:3, c:7, type:'calc'} 
+                ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Check Row 3</h3>
+                    <div class="bg-green-50 border border-green-200 p-3 mt-2 rounded shadow-sm">
+                        <p><strong>Row 3:</strong> Check $M[3,7] = 21$. Cell above $M[2,7] = 16$. <strong>Different!</strong></p>
+                        <p class="mt-1">&rarr; <span class="text-green-600 font-bold text-lg">Select</span> Item 3 (Orig 2).</p>
+                        <p class="text-sm mt-2 text-gray-600">Remaining weight = $7 - W_3 = 7 - 3 = 4$.</p>
+                        <p class="text-sm text-gray-600">Jump to Row 2, Col 4: <strong>$M[2,4]$</strong>.</p>
+                    </div>
+                `,
+                render: () => renderDPMatrix(dpMatrix2, dpItems2, capacity2, 8, 16, [ 
+                    {r:5, c:16, type:'success'}, 
+                    {r:4, c:11, type:'success'}, 
+                    {r:3, c:7, type:'success'}, 
+                    {r:2, c:7, type:'dep'},
+                    {r:2, c:4, type:'calc'} 
+                ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Check Row 2</h3>
+                    <div class="bg-green-50 border border-green-200 p-3 mt-2 rounded shadow-sm">
+                        <p><strong>Row 2:</strong> Check $M[2,4] = 16$. Cell above $M[1,4] = 6$. <strong>Different!</strong></p>
+                        <p class="mt-1">&rarr; <span class="text-green-600 font-bold text-lg">Select</span> Item 2 (Orig 1).</p>
+                        <p class="text-sm mt-2 text-gray-600">Remaining weight = $4 - W_2 = 4 - 2 = 2$.</p>
+                        <p class="text-sm text-gray-600">Jump to Row 1, Col 2: <strong>$M[1,2]$</strong>.</p>
+                    </div>
+                `,
+                render: () => renderDPMatrix(dpMatrix2, dpItems2, capacity2, 8, 16, [ 
+                    {r:5, c:16, type:'success'}, 
+                    {r:4, c:11, type:'success'}, 
+                    {r:3, c:7, type:'success'}, 
+                    {r:2, c:4, type:'success'}, 
+                    {r:1, c:4, type:'dep'},
+                    {r:1, c:2, type:'calc'} 
+                ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-blue-800">Check Row 1</h3>
+                    <div class="bg-green-50 border border-green-200 p-3 mt-2 rounded shadow-sm">
+                        <p><strong>Row 1:</strong> Check $M[1,2] = 6$. Cell above $M[0,2] = 0$. <strong>Different!</strong></p>
+                        <p class="mt-1">&rarr; <span class="text-green-600 font-bold text-lg">Select</span> Item 1 (Orig 5).</p>
+                        <p class="text-sm mt-2 text-gray-600">Remaining weight = $2 - W_1 = 2 - 1 = 1$.</p>
+                        <p class="text-sm text-gray-600">Jump to Row 0, Col 1: <strong>$M[0,1]$</strong>.</p>
+                    </div>
+                    <p class="mt-3 font-semibold text-gray-700">Since we've reached Row 0, the backtracking is complete!</p>
+                `,
+                render: () => renderDPMatrix(dpMatrix2, dpItems2, capacity2, 8, 16, [ 
+                    {r:5, c:16, type:'success'}, 
+                    {r:4, c:11, type:'success'}, 
+                    {r:3, c:7, type:'success'}, 
+                    {r:2, c:4, type:'success'}, 
+                    {r:1, c:2, type:'success'}, 
+                    {r:0, c:2, type:'dep'},
+                    {r:0, c:1, type:'calc'} 
+                ])
+            },
+            {
+                explain: `
+                    <h3 class="font-bold text-lg mb-2 text-green-700">Final Solution</h3>
+                    <p>We successfully traced back through the table to find the items that give the optimal maximum profit of <strong>54</strong>.</p>
+                    <h4 class="font-bold mt-4 text-blue-800 border-b pb-1">Selected Items (Original IDs):</h4>
+                    <ul class="list-disc pl-5 mt-2 space-y-1">
+                        <li>Item <strong>3</strong> (Weight 5, Profit 15)</li>
+                        <li>Item <strong>6</strong> (Weight 4, Profit 18)</li>
+                        <li>Item <strong>2</strong> (Weight 3, Profit 5)</li>
+                        <li>Item <strong>1</strong> (Weight 2, Profit 10)</li>
+                        <li>Item <strong>5</strong> (Weight 1, Profit 6)</li>
+                    </ul>
+                    <div class="bg-gray-100 p-3 mt-4 border border-gray-300 rounded text-sm shadow-inner">
+                        <strong>Verification:</strong><br>
+                        Total Weight = $5 + 4 + 3 + 2 + 1 = 15 \\le 16$<br>
+                        Total Profit = $15 + 18 + 5 + 10 + 6 = 54$
+                    </div>
+                `,
+                render: () => renderDPMatrix(dpMatrix2, dpItems2, capacity2, 8, 16, [ 
+                    {r:5, c:16, type:'success'}, 
+                    {r:4, c:11, type:'success'}, 
+                    {r:3, c:7, type:'success'}, 
+                    {r:2, c:4, type:'success'}, 
+                    {r:1, c:2, type:'success'} 
+                ])
             }
         ];
 
@@ -436,7 +630,7 @@
             let html = `
                 <div class="w-full fade-in">
                     <h4 class="font-bold mb-2 text-center text-gray-700">Items Data Matrix ${sorted ? '(Sorted by Ratio)' : ''}</h4>
-                    <table class="text-sm md:text-base bg-white shadow-sm rounded-lg overflow-hidden">
+                    <table class="w-full text-sm md:text-base bg-white shadow-sm rounded-lg overflow-hidden">
                         <thead>
                             <tr>
                                 <th>Item</th>
@@ -494,44 +688,53 @@
             return html;
         }
 
-        function renderDPMatrix(maxRow, maxCol, highlights = []) {
+        // Generic Render function for DP Matrix (handles both Q1 and Q2)
+        function renderDPMatrix(matrix, items, cap, maxRow, maxCol, highlights = []) {
             let html = `
-                <div class="w-full fade-in overflow-x-auto">
-                    <h4 class="font-bold mb-4 text-center text-gray-700">DP Matrix ($W=8$, 4 Items)</h4>
-                    <table class="text-sm bg-white shadow-sm rounded-lg">
-                        <thead>
-                            <tr>
-                                <th class="bg-gray-200">i</th>
-                                <th class="bg-gray-200">$W_i$</th>
-                                <th class="bg-gray-200">$P_i$</th>
+                <div class="w-full h-full flex flex-col justify-center fade-in pb-2">
+                    <h4 class="font-bold mb-4 text-center text-gray-700 text-lg">DP Matrix ($W=${cap}$, ${items.length} Items)</h4>
+                    <div class="overflow-x-auto w-full shadow-sm rounded-lg border border-gray-200">
+                        <table class="w-full text-xs md:text-sm lg:text-base bg-white whitespace-nowrap">
+                            <thead>
+                                <tr>
+                                    <th rowspan="2" class="bg-gray-200 sticky left-0 z-10 border-r border-gray-300 px-2 py-2 md:py-3 w-10">i</th>
+                                    <th rowspan="2" class="bg-gray-200 px-2 py-2 md:py-3">Item</th>
+                                    <th rowspan="2" class="bg-gray-200 px-2 py-2 md:py-3" title="Weight">W</th>
+                                    <th rowspan="2" class="bg-gray-200 px-2 py-2 md:py-3 border-r border-gray-300" title="Profit">P</th>
+                                    <th colspan="${cap + 1}" class="bg-blue-100 text-blue-800 py-2 md:py-3 text-center border-b border-blue-200">Capacity (w)</th>
+                                </tr>
+                                <tr>
             `;
-            for (let w = 0; w <= 8; w++) {
-                html += `<th class="bg-blue-50 text-blue-800">$w=${w}$</th>`;
+            for (let w = 0; w <= cap; w++) {
+                html += `<th class="bg-blue-50 text-blue-800 px-1 py-1 md:py-2 min-w-[24px] md:min-w-[32px]">${w}</th>`;
             }
             html += `</tr></thead><tbody>`;
 
-            for (let i = 0; i <= 4; i++) {
-                let item = i === 0 ? {w:'-', p:'-'} : dpItems[i-1];
+            for (let i = 0; i <= items.length; i++) {
+                let item = i === 0 ? {id:'-', w:'-', p:'-'} : items[i-1];
+                let itemIdDisplay = item.origId ? `#${item.origId}` : item.id;
+                
                 html += `<tr>
-                    <td class="font-bold bg-gray-50">${i}</td>
-                    <td class="bg-gray-50">${item.w}</td>
-                    <td class="bg-gray-50">${item.p}</td>
+                    <td class="font-bold bg-gray-50 sticky left-0 z-10 border-r border-gray-300 px-2 py-2 md:py-3 text-center">${i}</td>
+                    <td class="bg-gray-50 px-2 py-2 md:py-3 text-center">${i === 0 ? '-' : itemIdDisplay}</td>
+                    <td class="bg-gray-50 px-2 py-2 md:py-3 text-center">${item.w}</td>
+                    <td class="bg-gray-50 px-2 py-2 md:py-3 text-center border-r border-gray-300">${item.p}</td>
                 `;
                 
-                for (let w = 0; w <= 8; w++) {
-                    let val = (i <= maxRow && w <= maxCol) ? dpMatrix[i][w] : '';
+                for (let w = 0; w <= cap; w++) {
+                    let val = (i <= maxRow && w <= maxCol) ? matrix[i][w] : '';
                     let highlightClass = '';
                     
                     // Apply highlights
                     const hl = highlights.find(h => h.r === i && h.c === w);
                     if (hl) {
-                        if (hl.type === 'calc') highlightClass = 'highlight-calc font-bold';
+                        if (hl.type === 'calc') highlightClass = 'highlight-calc font-bold text-black';
                         if (hl.type === 'dep') highlightClass = 'highlight-dependency text-blue-800 font-bold';
-                        if (hl.type === 'success') highlightClass = 'highlight-success font-bold text-green-800';
+                        if (hl.type === 'success') highlightClass = 'highlight-success font-bold text-green-900 border-2 border-green-600';
                         if (hl.type === 'skip') highlightClass = 'highlight-skip text-red-500';
                     }
 
-                    html += `<td class="${highlightClass}">${val}</td>`;
+                    html += `<td class="px-1 py-2 md:py-3 text-center ${highlightClass} border-t border-gray-100">${val}</td>`;
                 }
                 html += `</tr>`;
             }
@@ -539,12 +742,13 @@
             
             // Legend
             html += `
-                <div class="mt-4 flex gap-4 text-xs text-gray-600 justify-center">
-                    <div class="flex items-center"><span class="w-3 h-3 bg-yellow-200 inline-block mr-1 border border-gray-400"></span> Calculating/Current</div>
-                    <div class="flex items-center"><span class="w-3 h-3 bg-blue-200 inline-block mr-1 border border-gray-400"></span> Dependency</div>
-                    <div class="flex items-center"><span class="w-3 h-3 bg-green-200 inline-block mr-1 border border-gray-400"></span> Selected</div>
-                    <div class="flex items-center"><span class="w-3 h-3 bg-red-200 inline-block mr-1 border border-gray-400"></span> Skipped</div>
+                <div class="mt-6 flex flex-wrap gap-4 text-xs md:text-sm text-gray-600 justify-center">
+                    <div class="flex items-center"><span class="w-4 h-4 bg-yellow-200 inline-block mr-2 border border-gray-400"></span> Current / Compare</div>
+                    <div class="flex items-center"><span class="w-4 h-4 bg-blue-200 inline-block mr-2 border border-gray-400"></span> Dependency (Above)</div>
+                    <div class="flex items-center"><span class="w-4 h-4 bg-green-200 inline-block mr-2 border border-green-600"></span> Selected</div>
+                    <div class="flex items-center"><span class="w-4 h-4 bg-red-200 inline-block mr-2 border border-gray-400"></span> Skipped</div>
                 </div>
+            </div>
             `;
             
             return html;
@@ -553,7 +757,9 @@
         // --- CONTROLLER LOGIC ---
 
         function getSteps() {
-            return currentMode === 'fractional' ? fractionalSteps : dpSteps;
+            if (currentMode === 'fractional') return fractionalSteps;
+            if (currentMode === 'dp1') return dp1Steps;
+            if (currentMode === 'dp2') return dp2Steps;
         }
 
         function updateUI() {
@@ -579,15 +785,15 @@
 
             // Update tab styles
             const btnFrac = document.getElementById('btn-fractional');
-            const btnDp = document.getElementById('btn-dp');
+            const btnDp1 = document.getElementById('btn-dp1');
+            const btnDp2 = document.getElementById('btn-dp2');
             
-            if (currentMode === 'fractional') {
-                btnFrac.className = "px-4 py-2 rounded-md bg-white text-blue-800 font-bold shadow transition";
-                btnDp.className = "px-4 py-2 rounded-md text-white hover:bg-blue-700 font-semibold transition";
-            } else {
-                btnDp.className = "px-4 py-2 rounded-md bg-white text-blue-800 font-bold shadow transition";
-                btnFrac.className = "px-4 py-2 rounded-md text-white hover:bg-blue-700 font-semibold transition";
-            }
+            const activeClass = "px-4 py-2 rounded-md bg-white text-blue-800 font-bold shadow transition text-sm";
+            const inactiveClass = "px-4 py-2 rounded-md text-white hover:bg-blue-700 font-semibold transition text-sm";
+
+            btnFrac.className = currentMode === 'fractional' ? activeClass : inactiveClass;
+            btnDp1.className = currentMode === 'dp1' ? activeClass : inactiveClass;
+            btnDp2.className = currentMode === 'dp2' ? activeClass : inactiveClass;
         }
 
         function switchTab(mode) {
