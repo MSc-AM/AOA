@@ -974,7 +974,13 @@
         
         // ↓↓↓↓↓ PASTE THE COPIED CODE BETWEEN THESE LINES ↓↓↓↓↓
         
-        const officialProgress = ["u1-1","u1-2","u1-3","u1-4","u1-5","u1-6","u1-7","u1-8","u1-9","u1-10","u2-1","u2-2","u2-3","u2-4","u2-5","u2-6","u2-7","u2-8","u2-9","u2-10","u2-11","u3-1","u3-2","u3-3","u3-6","u3-7","u3-9","u3-11","u3-10","u3-8","u3-5","u3-4","u4-1","u4-2","u4-3","u4-4","u4-7","u4-5","u4-6","u5-1","u5-2","u5-3","u5-4","u5-5","u5-6","u5-7","u5-8","u5-9"];
+        const officialProgress = [
+            "u1-1","u1-2","u1-3","u1-4","u1-5","u1-6","u1-7","u1-8","u1-9","u1-10",
+            "u2-1","u2-2","u2-3","u2-4","u2-5","u2-6","u2-7","u2-8","u2-9","u2-10","u2-11",
+            "u3-1","u3-2","u3-3","u3-4","u3-5","u3-6","u3-7","u3-8","u3-9","u3-10","u3-11",
+            "u4-1","u4-2","u4-3","u4-4","u4-5","u4-6","u4-7",
+            "u5-1","u5-2","u5-3","u5-4","u5-5","u5-6","u5-7","u5-8","u5-9"
+        ];
         
         // ↑↑↑↑↑ PASTE THE COPIED CODE BETWEEN THESE LINES ↑↑↑↑↑
         
@@ -1073,18 +1079,28 @@
          * NEW: SIMULATOR DATA (ADDED HERE)
          * ================================================================= */
         const simulatorData = [
+            // Searching & Sorting
+            { id: 'sim-search', title: 'Linear & Binary Search', desc: 'Visualization for Linear and Binary Search.', url: 'Html/6.%20Linear%20%26%20BInary%20Search.html', color: 'var(--success)' },
             { id: 'sim-merge', title: 'Merge Sort', desc: 'Interactive visualization for Merge Sort.', url: 'Html/1.%20Merge%20Sort.html', color: 'var(--accent)' },
             { id: 'sim-heap', title: 'Heap Sort', desc: 'Interactive visualization for Heap Sort.', url: 'Html/2.%20Heap%20Sort.html', color: 'var(--success)' },
             { id: 'sim-quick', title: 'Quick Sort', desc: 'Interactive visualization for Quick Sort.', url: 'Html/3.%20Quick%20Sort.html', color: 'var(--accent)' },
             { id: 'sim-radix', title: 'Radix Sort', desc: 'Interactive visualization for Radix Sort.', url: 'Html/4.%20Radix%20Sort.html', color: 'var(--success)' },
             { id: 'sim-bucket', title: 'Bucket Sort', desc: 'Interactive visualization for Bucket Sort.', url: 'Html/5.%20Bucket%20Sort.html', color: 'var(--accent)' },
-            { id: 'sim-search', title: 'Linear & Binary Search', desc: 'Visualization for Linear and Binary Search.', url: 'Html/6.%20Linear%20%26%20BInary%20Search.html', color: 'var(--success)' },
-            { id: 'sim-knapsack', title: 'Knapsack Problem', desc: 'Interactive visualization for Knapsack.', url: 'Html/11.%20Knapsack%20Problem.html', color: 'var(--accent)' },
+
+            // Graph Algorithms
             { id: 'sim-dijkstra', title: 'Dijkstra\'s Algorithm', desc: 'Shortest path visualization.', url: 'Html/13%20Dijiksta%27s%20Algorithm.html', color: 'var(--success)' },
             { id: 'sim-floyd', title: 'Floyd Warshall', desc: 'All-Pairs Shortest Path visualization.', url: 'Html/14%20Flyod%20Warshall.html', color: 'var(--accent)' },
-            { id: 'sim-mst', title: 'MST', desc: 'Minimum Spanning Tree algorithm.', url: 'Html/15%20MST.html', color: 'var(--success)' },
-            { id: 'sim-nqueen', title: 'N Queen Problem', desc: 'Visualization for the N-Queen problem.', url: 'Html/16%20N%20Queen%20Problem.html', color: 'var(--accent)' },
-            { id: 'sim-tsp', title: 'Travelling Salesman', desc: 'Visualization for TSP.', url: 'Html/17%20Travelling%20Salesman%20Problem.html', color: 'var(--success)' },
+            { id: 'sim-mst', title: 'Minimum Spanning Tree', desc: 'Minimum Spanning Tree algorithm.', url: 'Html/15%20MST.html', color: 'var(--success)' },
+
+            // Advanced Design Techniques
+            { id: 'sim-knapsack', title: 'Knapsack Problem', desc: 'Interactive visualization for Knapsack.', url: 'Html/11.%20Knapsack%20Problem.html', color: 'var(--accent)' },
+            { id: 'sim-nqueen', title: 'N Queen Problem', desc: 'Visualization for the N-Queen problem.', url: 'Html/16%20N%20Queen%20Problem.html', color: 'var(--success)' },
+            { id: 'sim-tsp', title: 'Travelling Salesman', desc: 'Visualization for TSP.', url: 'Html/17%20Travelling%20Salesman%20Problem.html', color: 'var(--accent)' },
+
+            // Exam Practice
+            { id: 'sim-heap-exam', title: 'Heap Sort Exam Question', desc: 'Practice and simulation.', url: 'Html/Heap%20Sort%20Exam%20Question.html', color: 'var(--danger)' },
+            { id: 'sim-quick-exam', title: 'Quick Sort Exam Question', desc: 'Practice and simulation.', url: 'Html/Quick%20Sort%20Exam%20Question.html', color: 'var(--danger)' },
+            { id: 'sim-mst-ques', title: 'MST Practice Question', desc: 'Practice questions for MST.', url: 'Html/MST%20QUES.html', color: 'var(--danger)' }
         ];
         /* ================================================================= */
 
