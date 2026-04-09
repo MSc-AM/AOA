@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elementary Sorting Visualizer</title>
+    <style>
+        /* CSS Variables for Theming */
+        :root {
+            /* Light Theme Defaults */
+            --bg-color: #f8fafc;
+            --surface-color: #ffffff;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --border-color: #e2e8f0;
+            
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --control-bg: #f1f5f9;
+            
+            /* Visualization Colors (Matching Image Style) */
+            --box-bg: #ffffff;
+            --box-border: #000000;
+            --box-text: #000000;
+            
+            --bar-compare: #fde047;     /* Vibrant Yellow */
+            --bar-swap: #fb923c;        /* Vibrant Orange */
+            --bar-sorted: #86efac;      /* Vibrant Green */
+            
+            --pseudo-highlight: #dbeafe;
+            --pseudo-text: #1e40af;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --radius: 0.75rem;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --text-primary: #f8fafc;
+            --text-secondary: #cbd5e1;
+            --border-color: #334155;
+            
+            --primary: #3b82f6;
+            --control-bg: #334155;
+            
+            /* Visualization Colors (Dark Mode Adjustments) */
+            --box-bg: #1e293b;
+            --box-border: #64748b;
+            --box-text: #f8fafc;
+            
+            --bar-compare: #eab308; 
+            --bar-swap: #ea580c;    
+            --bar-sorted: #22c55e;  
+            
+            --pseudo-highlight: #1e3a8a;
+            --pseudo-text: #bfdbfe;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+        }
+
+        /* Header */
+        header {
+            padding: clamp(1rem, 2vw, 1.5rem) clamp(1rem, 5vw, 3rem);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--surface-color);
+            box-shadow: var(--shadow-sm);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        h1 {
+            font-size: clamp(1.25rem, 2.5vw, 1.75rem);
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .theme-toggle {
+            background: var(--control-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 2rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .theme-toggle:hover { background: var(--border-color); }
+
+        /* Main Container */
+        main {
+            flex: 1;
+            padding: clamp(1rem, 3vw, 2rem) clamp(1rem, 5vw, 3rem);
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-width: 1920px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Controls Area */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            background-color: var(--surface-color);
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        select, button, input[type="range"] {
+            font-family: inherit;
+            font-size: 0.9rem;
+        }
+
+        select {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.1s, background-color 0.2s, opacity 0.2s;
+        }
+        
+        button:active { transform: scale(0.97); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover:not(:disabled) { background-color: var(--primary-hover); }
+        .btn-secondary { background-color: var(--control-bg); color: var(--text-primary); border: 1px solid var(--border-color); }
+        .btn-secondary:hover:not(:disabled) { background-color: var(--border-color); }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            min-width: 120px;
+        }
+
+        input[type="range"] { accent-color: var(--primary); cursor: pointer; }
+
+        /* Visualization Area */
+        .visualizer-container {
+            height: 45vh;
+            min-height: 350px;
+            background-color: var(--surface-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            display: flex;
+            flex-direction: column;
+            padding: 1rem;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .visualizer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        .pass-indicator {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--primary);
+            background: var(--bg-color);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .legend {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            font-size: 0.8rem;
+            background: var(--bg-color);
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
+        
+        .legend-item { display: flex; align-items: center; gap: 0.3rem; }
+        .legend-color { width: 12px; height: 12px; border-radius: 2px; }
+
+        .bars-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            align-content: center;
+            gap: 6px;
+            flex-wrap: wrap;
+            min-height: 0; 
+            padding: 2rem 1rem;
+        }
+
+        .bar {
+            width: clamp(35px, 5vw, 55px);
+            height: clamp(35px, 5vw, 55px);
+            background-color: var(--box-bg);
+            border: 2px solid var(--box-border);
+            color: var(--box-text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: clamp(0.9rem, 1.5vw, 1.25rem);
+            transition: background-color 0.2s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 4px;
+            position: relative;
+        }
+
+        /* Color States & Animations */
+        .bar.comparing { background-color: var(--bar-compare); color: #000; border-color: #000; transform: scale(1.05); z-index: 1; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .bar.swapping { background-color: var(--bar-swap); color: #fff; border-color: #000; transform: scale(1.15); z-index: 2; box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
+        .bar.sorted { background-color: var(--bar-sorted); color: #000; opacity: 0.95; }
+
+        /* Pointers/Annotations */
+        .pointer {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: var(--primary);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 10;
+            font-weight: normal;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            pointer-events: none;
+        }
+
+        .pointer::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--primary) transparent transparent transparent;
+        }
+
+        /* Theory & Pseudocode Section */
+        .info-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card h2 { font-size: 1.25rem; margin-bottom: 1rem; color: var(--primary); }
+        .card p { margin-bottom: 0.75rem; color: var(--text-secondary); }
+
+        .complexity-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-top: auto;
+        }
+        .complexity-item {
+            background: var(--bg-color);
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+        }
+        .complexity-item strong { display: block; color: var(--text-primary); margin-bottom: 0.2rem; }
+
+        /* Pass History Logs */
+        .pass-history-container {
+            background-color: var(--bg-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            max-height: 250px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            flex: 1;
+        }
+        .pass-log {
+            padding: 0.35rem 0;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        .pass-log:last-child { border-bottom: none; }
+        .pass-badge {
+            font-weight: bold;
+            color: var(--primary);
+            margin-right: 0.5rem;
+        }
+
+        .pseudocode-container {
+            background-color: var(--bg-color);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.9rem;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            flex: 1;
+        }
+
+        .pseudo-line {
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            color: var(--text-primary);
+            transition: background-color 0.2s, color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            gap: 2rem;
+            white-space: pre;
+        }
+
+        .pseudo-line .complexity {
+            color: var(--text-secondary);
+            font-style: italic;
+            font-size: 0.85em;
+        }
+
+        .pseudo-line.active {
+            background-color: var(--pseudo-highlight);
+            color: var(--pseudo-text);
+            font-weight: bold;
+        }
+        
+        .pseudo-line.active .complexity {
+            color: var(--pseudo-text);
+            opacity: 0.8;
+        }
+        
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .controls { justify-content: center; }
+            .visualizer-header { flex-direction: column; gap: 0.5rem; align-items: center; }
+            .legend { justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Elementary Sorting Visualizer</h1>
+        <button class="theme-toggle" id="themeToggle">🌙 Dark Mode</button>
+    </header>
+
+    <main>
+        <!-- Controls -->
+        <div class="controls">
+            <select id="algorithmSelect">
+                <option value="selection">Selection Sort</option>
+                <option value="insertion">Insertion Sort</option>
+                <option value="bubble">Bubble Sort</option>
+            </select>
+            
+            <button class="btn-secondary" id="generateBtn">🔄 Generate New Array</button>
+            
+            <div class="control-group" style="margin-left: auto;">
+                <button class="btn-secondary" id="prevStepBtn" disabled>⏮ Prev Step</button>
+                <button class="btn-primary" id="playPauseBtn">▶ Play</button>
+                <button class="btn-secondary" id="nextStepBtn">⏭ Next Step</button>
+            </div>
+
+            <div class="slider-container">
+                <label for="speedSlider">Speed: <span id="speedVal">Fast</span></label>
+                <input type="range" id="speedSlider" min="1" max="100" value="80">
+            </div>
+
+            <div class="slider-container">
+                <label for="sizeSlider">Array Size: <span id="sizeVal">10</span></label>
+                <input type="range" id="sizeSlider" min="5" max="30" value="10">
+            </div>
+        </div>
+
+        <!-- Visualizer -->
+        <div class="visualizer-container" id="visualizer">
+            <div class="visualizer-header">
+                <div class="pass-indicator" id="passIndicator">Pass: 0</div>
+                <div class="legend">
+                    <div class="legend-item"><div class="legend-color" style="background: var(--box-bg); border: 1px solid var(--box-border);"></div> Default</div>
+                    <div class="legend-item"><div class="legend-color" style="background: var(--bar-compare); border: 1px solid #000;"></div> Comparing</div>
+                    <div class="legend-item"><div class="legend-color" style="background: var(--bar-swap); border: 1px solid #000;"></div> Swapping/Moving</div>
+                    <div class="legend-item"><div class="legend-color" style="background: var(--bar-sorted); border: 1px solid var(--text-secondary);"></div> Sorted</div>
+                </div>
+            </div>
+            
+            <div class="bars-wrapper" id="bars">
+                <!-- Bars will be injected here via JS -->
+            </div>
+        </div>
+
+        <!-- Theory Panel -->
+        <div class="info-panel">
+            <div class="card">
+                <h2 id="theoryTitle">Algorithm Details</h2>
+                <p id="theoryDesc">Description will appear here.</p>
+                <p id="theoryStability"><strong>Stability:</strong> <span></span></p>
+                
+                <div class="complexity-grid">
+                    <div class="complexity-item">
+                        <strong>Best Case Time</strong>
+                        <span id="compBest"></span>
+                    </div>
+                    <div class="complexity-item">
+                        <strong>Average Time</strong>
+                        <span id="compAvg"></span>
+                    </div>
+                    <div class="complexity-item">
+                        <strong>Worst Case Time</strong>
+                        <span id="compWorst"></span>
+                    </div>
+                    <div class="complexity-item">
+                        <strong>Space Complexity</strong>
+                        <span id="compSpace"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Pass History Log</h2>
+                <div class="pass-history-container" id="passHistoryContainer">
+                    <div class="pass-log">No passes completed yet.</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Live Pseudocode</h2>
+                <div class="pseudocode-container" id="pseudocodeContainer">
+                    <!-- Pseudocode lines will be injected here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        /**
+         * State & Configuration Data
+         */
+        const ALGORITHMS = {
+            selection: {
+                title: "Selection Sort",
+                desc: "Selection Sort divides the input list into two parts: a sorted sublist built up from left to right, and the remaining unsorted items. It repeatedly finds the minimum element from the unsorted part and puts it at the beginning.",
+                best: "Ω(n²)", avg: "Θ(n²)", worst: "O(n²)", space: "O(1)",
+                stability: "Unstable (Default implementation swaps elements across large gaps, which can disrupt relative order).",
+                pseudocode: [
+                    { code: "for i = 0 to n-1", complexity: "O(n)" },
+                    { code: "  min_idx = i", complexity: "O(1)" },
+                    { code: "  for j = i+1 to n-1", complexity: "O(n)" },
+                    { code: "    if A[j] < A[min_idx]", complexity: "O(1)" },
+                    { code: "      min_idx = j", complexity: "O(1)" },
+                    { code: "  swap(A[i], A[min_idx])", complexity: "O(1)" }
+                ]
+            },
+            insertion: {
+                title: "Insertion Sort",
+                desc: "Insertion Sort builds the final sorted array one item at a time. It iterates, consuming one input element each repetition, and grows a sorted output list by inserting elements into their correct position.",
+                best: "Ω(n)", avg: "Θ(n²)", worst: "O(n²)", space: "O(1)",
+                stability: "Stable (Elements with equal keys retain their relative order as shifting only happens for strictly greater elements).",
+                pseudocode: [
+                    { code: "for i = 1 to n-1", complexity: "O(n)" },
+                    { code: "  key = A[i]", complexity: "O(1)" },
+                    { code: "  j = i - 1", complexity: "O(1)" },
+                    { code: "  while j >= 0 and A[j] > key", complexity: "O(n)" },
+                    { code: "    A[j+1] = A[j]", complexity: "O(1)" },
+                    { code: "    j = j - 1", complexity: "O(1)" },
+                    { code: "  A[j+1] = key", complexity: "O(1)" }
+                ]
+            },
+            bubble: {
+                title: "Bubble Sort",
+                desc: "Bubble Sort repeatedly steps through the list, compares adjacent elements, and swaps them if they are in the wrong order. The pass is repeated until the list is sorted, making larger elements 'bubble' to the top.",
+                best: "Ω(n)", avg: "Θ(n²)", worst: "O(n²)", space: "O(1)",
+                stability: "Stable (It only swaps strictly adjacent elements if one is greater, preserving original order of equals).",
+                pseudocode: [
+                    { code: "for i = 0 to n-1", complexity: "O(n)" },
+                    { code: "  swapped = false", complexity: "O(1)" },
+                    { code: "  for j = 0 to n-i-1", complexity: "O(n)" },
+                    { code: "    if A[j] > A[j+1]", complexity: "O(1)" },
+                    { code: "      swap(A[j], A[j+1])", complexity: "O(1)" },
+                    { code: "      swapped = true", complexity: "O(1)" },
+                    { code: "  if not swapped break", complexity: "O(1)" }
+                ]
+            }
+        };
+
+        // Global State & History Management
+        let backupArray = []; 
+        let isPlaying = false;
+        let animationDelay = 20; // ms
+        
+        // History array to allow forwards/backwards scrubbing
+        let history = [];
+        let currentStepIndex = 0;
+
+        // DOM Elements
+        const visualizer = id('visualizer');
+        const barsWrapper = id('bars');
+        const playPauseBtn = id('playPauseBtn');
+        const nextStepBtn = id('nextStepBtn');
+        const prevStepBtn = id('prevStepBtn');
+        const generateBtn = id('generateBtn');
+        const algoSelect = id('algorithmSelect');
+        const speedSlider = id('speedSlider');
+        const sizeSlider = id('sizeSlider');
+        const pseudoContainer = id('pseudocodeContainer');
+        const passHistoryContainer = id('passHistoryContainer');
+        const passIndicator = id('passIndicator');
+        const themeToggle = id('themeToggle');
+
+        /**
+         * Initialization & UI Setup
+         */
+        function init() {
+            updateTheoryPanel();
+            generateArray();
+            setupEventListeners();
+        }
+
+        function id(str) { return document.getElementById(str); }
+
+        function setupEventListeners() {
+            generateBtn.addEventListener('click', () => { resetState(); generateArray(); });
+            
+            sizeSlider.addEventListener('input', (e) => {
+                id('sizeVal').innerText = e.target.value;
+                resetState();
+                generateArray();
+            });
+
+            speedSlider.addEventListener('input', (e) => {
+                const val = parseInt(e.target.value);
+                // Inverse map: slider 1 (slow) -> delay 400ms, slider 100 (fast) -> delay 2ms
+                animationDelay = 402 - (val * 4); 
+                id('speedVal').innerText = val > 80 ? 'Fast' : (val < 30 ? 'Slow' : 'Med');
+            });
+
+            algoSelect.addEventListener('change', () => {
+                resetState();
+                updateTheoryPanel();
+                // Regenerate the history tracking with the existing array
+                generateHistory(); 
+            });
+
+            playPauseBtn.addEventListener('click', togglePlay);
+            nextStepBtn.addEventListener('click', stepNext);
+            prevStepBtn.addEventListener('click', stepPrev);
+
+            themeToggle.addEventListener('click', () => {
+                const html = document.documentElement;
+                if (html.getAttribute('data-theme') === 'light') {
+                    html.setAttribute('data-theme', 'dark');
+                    themeToggle.innerText = '☀️ Light Mode';
+                } else {
+                    html.setAttribute('data-theme', 'light');
+                    themeToggle.innerText = '🌙 Dark Mode';
+                }
+            });
+        }
+
+        function generateArray() {
+            const size = parseInt(sizeSlider.value);
+            let array = [];
+            for (let i = 0; i < size; i++) {
+                array.push(Math.floor(Math.random() * 96) + 5);
+            }
+            backupArray = [...array];
+            generateHistory();
+        }
+
+        function updateTheoryPanel() {
+            const algo = ALGORITHMS[algoSelect.value];
+            id('theoryTitle').innerText = algo.title;
+            id('theoryDesc').innerText = algo.desc;
+            id('compBest').innerText = algo.best;
+            id('compAvg').innerText = algo.avg;
+            id('compWorst').innerText = algo.worst;
+            id('compSpace').innerText = algo.space;
+            id('theoryStability').querySelector('span').innerText = algo.stability;
+
+            // Generate Pseudocode DOM
+            pseudoContainer.innerHTML = '';
+            algo.pseudocode.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'pseudo-line';
+                div.id = `pseudo-${index}`;
+                div.innerHTML = `<span class="code">${item.code}</span><span class="complexity">// ${item.complexity}</span>`;
+                pseudoContainer.appendChild(div);
+            });
+        }
+
+        function highlightLine(lineIndex) {
+            document.querySelectorAll('.pseudo-line').forEach(el => el.classList.remove('active'));
+            if (lineIndex !== null && lineIndex !== undefined) {
+                const el = id(`pseudo-${lineIndex}`);
+                if (el) el.classList.add('active');
+            }
+        }
+
+        function updateButtonStates() {
+            prevStepBtn.disabled = isPlaying || currentStepIndex <= 0;
+            nextStepBtn.disabled = isPlaying || currentStepIndex >= history.length - 1;
+            algoSelect.disabled = isPlaying;
+            generateBtn.disabled = isPlaying;
+            sizeSlider.disabled = isPlaying;
+        }
+
+        function resetState() {
+            isPlaying = false;
+            playPauseBtn.innerText = '▶ Play';
+            highlightLine(null);
+            currentStepIndex = 0;
+            passHistoryContainer.innerHTML = '<div class="pass-log">No passes completed yet.</div>';
+            passIndicator.innerText = 'Pass: 0';
+            updateButtonStates();
+        }
+
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+        /**
+         * Core Engine: State History & Rendering
+         */
+         
+        function createState(arr, comp, swap, sorted, ptrs, line, pass = 0, isEnd = false) {
+            return {
+                array: [...arr],
+                comparing: [...comp],
+                swapping: [...swap],
+                sorted: [...sorted],
+                pointers: { ...ptrs },
+                line: line,
+                pass: pass,
+                isEndOfPass: isEnd
+            };
+        }
+
+        function generateHistory() {
+            history = [];
+            let workingArray = [...backupArray];
+            
+            const algo = algoSelect.value;
+            let gen;
+            if (algo === 'selection') gen = selectionSortGen(workingArray);
+            else if (algo === 'insertion') gen = insertionSortGen(workingArray);
+            else if (algo === 'bubble') gen = bubbleSortGen(workingArray);
+
+            for (let state of gen) {
+                history.push(state);
+            }
+            
+            currentStepIndex = 0;
+            renderHistoryState();
+        }
+
+        async function togglePlay() {
+            if (currentStepIndex >= history.length - 1) {
+                currentStepIndex = 0; // Restart if at end
+            }
+            
+            isPlaying = !isPlaying;
+            playPauseBtn.innerText = isPlaying ? '⏸ Pause' : '▶ Play';
+            updateButtonStates();
+
+            if (isPlaying) {
+                await runAnimationLoop();
+            }
+        }
+
+        function stepNext() {
+            if (currentStepIndex < history.length - 1) {
+                currentStepIndex++;
+                renderHistoryState();
+            }
+        }
+
+        function stepPrev() {
+            if (currentStepIndex > 0) {
+                currentStepIndex--;
+                renderHistoryState();
+            }
+        }
+
+        async function runAnimationLoop() {
+            while (isPlaying && currentStepIndex < history.length - 1) {
+                stepNext();
+                await sleep(animationDelay);
+            }
+            
+            if (currentStepIndex >= history.length - 1) {
+                isPlaying = false;
+                playPauseBtn.innerText = '▶ Play';
+                updateButtonStates();
+            }
+        }
+
+        function renderHistoryState() {
+            const state = history[currentStepIndex];
+            if (!state) return;
+
+            highlightLine(state.line);
+            passIndicator.innerText = `Pass: ${state.pass}`;
+            barsWrapper.innerHTML = '';
+
+            // 1. Render Visual Blocks
+            state.array.forEach((val, idx) => {
+                const bar = document.createElement('div');
+                bar.classList.add('bar');
+                bar.innerText = val;
+                bar.id = `bar-${idx}`;
+                
+                if (state.sorted.includes(idx)) bar.classList.add('sorted');
+                if (state.comparing.includes(idx)) bar.classList.add('comparing');
+                if (state.swapping.includes(idx)) bar.classList.add('swapping');
+
+                // Apply Pointers
+                if (state.pointers[idx]) {
+                    const ptr = document.createElement('div');
+                    ptr.className = 'pointer';
+                    ptr.innerText = state.pointers[idx];
+                    bar.appendChild(ptr);
+                }
+
+                barsWrapper.appendChild(bar);
+            });
+
+            // 2. Render Pass History Logs
+            const completedPasses = history.slice(0, currentStepIndex + 1).filter(s => s.isEndOfPass);
+            
+            passHistoryContainer.innerHTML = '';
+            if (completedPasses.length === 0) {
+                passHistoryContainer.innerHTML = '<div class="pass-log">No passes completed yet.</div>';
+            } else {
+                completedPasses.forEach(pState => {
+                    const div = document.createElement('div');
+                    div.className = 'pass-log';
+                    div.innerHTML = `<span class="pass-badge">Pass ${pState.pass}:</span> [${pState.array.join(', ')}]`;
+                    passHistoryContainer.appendChild(div);
+                });
+                // Auto scroll to latest pass
+                passHistoryContainer.scrollTop = passHistoryContainer.scrollHeight;
+            }
+
+            updateButtonStates();
+        }
+
+        /**
+         * Sorting Algorithms (Generators yielding isolated states)
+         */
+
+        function* selectionSortGen(arr) {
+            const n = arr.length;
+            let sorted = [];
+            let pass = 1;
+            
+            yield createState(arr, [], [], sorted, {}, null, 0); // Initial
+
+            for (let i = 0; i < n; i++) {
+                yield createState(arr, [], [], sorted, { [i]: "i" }, 0, pass);
+                let min_idx = i;
+                yield createState(arr, [], [], sorted, { [i]: "i, min" }, 1, pass);
+                
+                for (let j = i + 1; j < n; j++) {
+                    let ptrs = { [i]: "i", [min_idx]: "min", [j]: "j" };
+                    if(i === min_idx) ptrs = { [i]: "i, min", [j]: "j" };
+                    
+                    yield createState(arr, [], [], sorted, ptrs, 2, pass);
+                    yield createState(arr, [min_idx, j], [], sorted, ptrs, 3, pass);
+                    
+                    if (arr[j] < arr[min_idx]) {
+                        min_idx = j;
+                        ptrs = { [i]: "i", [min_idx]: "new min", [j]: "j" };
+                        yield createState(arr, [min_idx], [], sorted, ptrs, 4, pass);
+                    }
+                }
+                
+                if (min_idx !== i) {
+                    let ptrs = { [i]: "swap", [min_idx]: "swap" };
+                    yield createState(arr, [], [i, min_idx], sorted, ptrs, 5, pass);
+                    let temp = arr[i]; arr[i] = arr[min_idx]; arr[min_idx] = temp;
+                    yield createState(arr, [], [i, min_idx], sorted, ptrs, 5, pass);
+                }
+                sorted.push(i);
+                yield createState(arr, [], [], sorted, {}, 0, pass, true);
+                pass++;
+            }
+            yield createState(arr, [], [], sorted, {}, null, pass - 1); // Final
+        }
+
+        function* insertionSortGen(arr) {
+            const n = arr.length;
+            let sorted = [0];
+            let pass = 1;
+            
+            yield createState(arr, [], [], sorted, {}, null, 0); // Initial
+            
+            for (let i = 1; i < n; i++) {
+                yield createState(arr, [], [], sorted, { [i]: "i" }, 0, pass);
+                let key = arr[i];
+                yield createState(arr, [], [], sorted, { [i]: "key (" + key + ")" }, 1, pass);
+                
+                let j = i - 1;
+                yield createState(arr, [], [], sorted, { [i]: "key", [j]: "j" }, 2, pass);
+                
+                while (j >= 0) {
+                    let ptrs = { [j]: "j", [j+1]: "j+1" };
+                    yield createState(arr, [j, j+1], [], sorted, ptrs, 3, pass);
+                    
+                    if (arr[j] > key) {
+                        yield createState(arr, [], [j, j+1], sorted, { [j]: "move", [j+1]: "move" }, 4, pass);
+                        arr[j + 1] = arr[j];
+                        yield createState(arr, [], [j, j+1], sorted, { [j]: "move", [j+1]: "move" }, 4, pass);
+                        j = j - 1;
+                        if (j >= 0) yield createState(arr, [], [], sorted, { [j]: "j" }, 5, pass);
+                    } else {
+                        break;
+                    }
+                }
+                arr[j + 1] = key;
+                yield createState(arr, [], [j + 1], sorted, { [j + 1]: "inserted" }, 6, pass);
+                sorted.push(i);
+                yield createState(arr, [], [], sorted, {}, 0, pass, true);
+                pass++;
+            }
+            yield createState(arr, [], [], sorted, {}, null, pass - 1); // Final
+        }
+
+        function* bubbleSortGen(arr) {
+            const n = arr.length;
+            let sorted = [];
+            let pass = 1;
+            
+            yield createState(arr, [], [], sorted, {}, null, 0); // Initial
+
+            for (let i = 0; i < n; i++) {
+                yield createState(arr, [], [], sorted, { [n-1-i]: "bound" }, 0, pass);
+                let swapped = false;
+                yield createState(arr, [], [], sorted, { [n-1-i]: "bound" }, 1, pass);
+                
+                for (let j = 0; j < n - i - 1; j++) {
+                    yield createState(arr, [], [], sorted, { [j]: "j" }, 2, pass);
+                    yield createState(arr, [j, j+1], [], sorted, { [j]: "j", [j+1]: "j+1" }, 3, pass);
+                    
+                    if (arr[j] > arr[j + 1]) {
+                        yield createState(arr, [], [j, j+1], sorted, { [j]: "swap", [j+1]: "swap" }, 4, pass);
+                        let temp = arr[j]; arr[j] = arr[j + 1]; arr[j + 1] = temp;
+                        yield createState(arr, [], [j, j+1], sorted, { [j]: "swap", [j+1]: "swap" }, 4, pass);
+                        swapped = true;
+                        yield createState(arr, [], [], sorted, {}, 5, pass);
+                    }
+                }
+                sorted.push(n - i - 1);
+                
+                if (!swapped) {
+                    for(let k=0; k < n-i; k++) sorted.push(k);
+                    yield createState(arr, [], [], sorted, {}, 6, pass, true);
+                    break;
+                } else {
+                    yield createState(arr, [], [], sorted, {}, 6, pass, true);
+                }
+                pass++;
+            }
+            yield createState(arr, [], [], sorted, {}, null, pass - 1); // Final
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', init);
+
+    </script>
+</body>
+</html>
